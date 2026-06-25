@@ -1,93 +1,157 @@
 <%- include('../partials/header') %>
-<section class="section page-section account-dashboard-page">
-  <div class="container">
-    <div class="section-heading account-heading">
-      <div>
-        <span class="eyebrow"><svg class="svg-icon" aria-hidden="true"><use href="#icon-dashboard"></use></svg>AKUN SAYA</span>
-        <h1>Halo, <%= user.name %></h1>
-        <p>Lihat ringkasan aktivitas dan riwayat pesanan akun Anda.</p>
+<%
+  const statusLabels = {
+    pending: 'MENUNGGU DIBAYAR',
+    paid: 'DIBAYAR',
+    processing: 'DIPROSES',
+    completed: 'SELESAI',
+    cancelled: 'DIBATALKAN',
+    expired: 'KEDALUWARSA',
+    manual_review: 'DIPERIKSA'
+  };
+%>
+<section class="section page-section account-dashboard-page account-profile-dashboard">
+  <div class="container account-profile-container">
+    <article class="account-profile-hero glass-card">
+      <div class="account-profile-avatar" aria-label="Foto profil <%= user.name %>">
+        <% if (currentUser?.hasAvatar) { %>
+          <img src="/account/avatar" alt="Foto profil <%= user.name %>">
+        <% } else { %>
+          <span><%= user.name.slice(0, 1).toUpperCase() %></span>
+        <% } %>
       </div>
-      <a class="btn btn-ghost btn-icon-label" href="/account/profile">
-        <svg class="svg-icon" aria-hidden="true"><use href="#icon-edit"></use></svg>
-        <span>Edit Profil</span>
-      </a>
-    </div>
 
-    <div class="stats-grid account-stats account-dashboard-stats">
-      <article class="stat-card glass-card market-stat-card">
-        <span class="market-icon market-icon-blue"><svg class="svg-icon" aria-hidden="true"><use href="#icon-receipt"></use></svg></span>
-        <span>Total Pesanan</span>
-        <strong><%= purchaseStats.totalOrders %></strong>
-        <a href="/account/orders">Lihat semua pesanan</a>
-      </article>
-      <article class="stat-card glass-card market-stat-card">
-        <span class="market-icon market-icon-green"><svg class="svg-icon" aria-hidden="true"><use href="#icon-check-circle"></use></svg></span>
-        <span>Pesanan Selesai</span>
-        <strong><%= purchaseStats.completedOrders %></strong>
-        <small>Pesanan yang telah selesai</small>
-      </article>
-      <article class="stat-card glass-card market-stat-card">
-        <span class="market-icon market-icon-orange"><svg class="svg-icon" aria-hidden="true"><use href="#icon-clock"></use></svg></span>
-        <span>Menunggu Dibayar</span>
-        <strong><%= purchaseStats.pendingOrders %></strong>
-        <a href="/account/orders">Periksa pembayaran</a>
-      </article>
-      <article class="stat-card glass-card market-stat-card">
-        <span class="market-icon market-icon-purple"><svg class="svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg></span>
-        <span>Produk Dibeli</span>
-        <strong><%= purchaseStats.totalProducts %></strong>
-        <small><%= purchaseStats.uniqueProducts %> produk berbeda</small>
-      </article>
-    </div>
+      <span class="account-profile-kicker">AKUN SAYA</span>
+      <h1><%= user.name %></h1>
 
-    <div class="section-heading subheading order-log-heading">
-      <div>
-        <span class="eyebrow"><svg class="svg-icon" aria-hidden="true"><use href="#icon-history"></use></svg>AKTIVITAS TERBARU</span>
-        <h2>Log Pesanan</h2>
+      <div class="account-profile-badges">
+        <% if (user.emailVerifiedAt) { %>
+          <span class="account-verified-badge">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-check-circle"></use></svg>
+            Email terverifikasi
+          </span>
+        <% } else { %>
+          <span class="account-verified-badge account-unverified-badge">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-clock"></use></svg>
+            Email belum terverifikasi
+          </span>
+        <% } %>
       </div>
-      <a class="text-link btn-icon-label" href="/account/orders">
-        <span>Semua pesanan</span>
-        <svg class="svg-icon" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
-      </a>
-    </div>
 
-    <% if (recentOrders.length) { %>
-      <div class="table-card glass-card account-order-log">
-        <div class="responsive-table">
-          <table>
-            <thead>
-              <tr><th>Pesanan</th><th>Tanggal</th><th>Total</th><th>Status</th><th>Aksi</th></tr>
-            </thead>
-            <tbody>
-              <% recentOrders.forEach((order) => { %>
-                <tr>
-                  <td><strong><%= order.orderNumber %></strong></td>
-                  <td><%= formatDate(order.createdAt) %></td>
-                  <td><%= formatRupiah(order.payableAmount + order.walletUsed) %></td>
-                  <td><span class="status-pill status-<%= order.status %>"><%= order.status %></span></td>
-                  <td>
-                    <a class="btn-icon-label" href="/account/orders/<%= order.orderNumber %>">
-                      <span>Detail</span>
-                      <svg class="svg-icon" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
-                    </a>
-                  </td>
-                </tr>
-              <% }) %>
-            </tbody>
-          </table>
+      <p class="account-profile-description">
+        <%= user.bio || 'Kelola belanja, produk digital, dan pengaturan akun Anda dari satu tempat.' %>
+      </p>
+
+      <dl class="account-profile-meta">
+        <div>
+          <dt><svg class="svg-icon" aria-hidden="true"><use href="#icon-mail"></use></svg></dt>
+          <dd><%= user.email %></dd>
         </div>
-      </div>
-    <% } else { %>
-      <div class="empty-state glass-card">
-        <svg class="empty-state-icon svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg>
-        <h2>Belum ada pesanan</h2>
-        <p>Pesanan yang Anda buat akan tercatat di halaman ini.</p>
-        <a class="btn btn-primary btn-icon-label" href="/">
+        <div>
+          <dt><svg class="svg-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg></dt>
+          <dd>Bergabung <%= formatDate(user.createdAt) %></dd>
+        </div>
+      </dl>
+
+      <div class="account-profile-actions">
+        <a class="account-profile-primary-action" href="/account/profile">
+          <svg class="svg-icon" aria-hidden="true"><use href="#icon-edit"></use></svg>
+          <span>Edit profil</span>
+        </a>
+        <a class="account-profile-secondary-action" href="/#catalog">
           <svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg>
-          <span>Belanja Sekarang</span>
+          <span>Belanja produk</span>
         </a>
       </div>
-    <% } %>
+    </article>
+
+    <section class="account-summary-grid" aria-label="Ringkasan akun">
+      <a class="account-summary-card glass-card" href="/account/orders">
+        <span class="account-summary-icon account-summary-icon-purple">
+          <svg class="svg-icon" aria-hidden="true"><use href="#icon-receipt"></use></svg>
+        </span>
+        <span class="account-summary-copy">
+          <small>Total pesanan</small>
+          <strong><%= purchaseStats.totalOrders %></strong>
+        </span>
+      </a>
+
+      <a class="account-summary-card glass-card" href="/account/orders">
+        <span class="account-summary-icon account-summary-icon-green">
+          <svg class="svg-icon" aria-hidden="true"><use href="#icon-check-circle"></use></svg>
+        </span>
+        <span class="account-summary-copy">
+          <small>Pesanan selesai</small>
+          <strong><%= purchaseStats.completedOrders %></strong>
+        </span>
+      </a>
+
+      <a class="account-summary-card glass-card" href="/account/orders">
+        <span class="account-summary-icon account-summary-icon-orange">
+          <svg class="svg-icon" aria-hidden="true"><use href="#icon-clock"></use></svg>
+        </span>
+        <span class="account-summary-copy">
+          <small>Menunggu dibayar</small>
+          <strong><%= purchaseStats.pendingOrders %></strong>
+        </span>
+      </a>
+
+      <a class="account-summary-card glass-card" href="/account/orders">
+        <span class="account-summary-icon account-summary-icon-blue">
+          <svg class="svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg>
+        </span>
+        <span class="account-summary-copy">
+          <small>Produk dimiliki</small>
+          <strong><%= purchaseStats.totalProducts %></strong>
+        </span>
+      </a>
+    </section>
+
+    <section class="account-activity-card glass-card">
+      <header class="account-activity-header">
+        <div>
+          <span>AKTIVITAS</span>
+          <h2>Pesanan terbaru</h2>
+        </div>
+        <a href="/account/orders">Lihat semua</a>
+      </header>
+
+      <% if (recentOrders.length) { %>
+        <div class="account-order-list">
+          <% recentOrders.forEach((order) => { %>
+            <% const productCount = (order.items || []).reduce((total, item) => total + Number(item.quantity || 0), 0); %>
+            <a class="account-order-item" href="/account/orders/<%= order.orderNumber %>">
+              <span class="account-order-icon">
+                <svg class="svg-icon" aria-hidden="true"><use href="#icon-receipt"></use></svg>
+              </span>
+
+              <span class="account-order-content">
+                <span class="account-order-title"><%= order.orderNumber %></span>
+                <span class="account-order-meta"><%= productCount %> produk · <%= formatDate(order.createdAt) %></span>
+                <span class="account-order-payment">
+                  <strong><%= formatRupiah(Number(order.payableAmount || 0) + Number(order.walletUsed || 0)) %></strong>
+                  <span class="status-pill status-<%= order.status %>"><%= statusLabels[order.status] || String(order.status || '').toUpperCase() %></span>
+                </span>
+              </span>
+
+              <svg class="svg-icon account-order-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+            </a>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <div class="account-activity-empty">
+          <span class="account-order-icon">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg>
+          </span>
+          <h3>Belum ada pesanan</h3>
+          <p>Pesanan yang Anda buat akan muncul di bagian ini.</p>
+          <a class="btn btn-primary btn-icon-label" href="/#catalog">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg>
+            <span>Mulai Belanja</span>
+          </a>
+        </div>
+      <% } %>
+    </section>
   </div>
 </section>
 <%- include('../partials/footer') %>
