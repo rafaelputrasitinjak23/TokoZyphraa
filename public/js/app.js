@@ -12,10 +12,23 @@
 
   document.querySelectorAll('[data-captcha-refresh]').forEach((button) => {
     button.addEventListener('click', () => {
-      const image = button.querySelector('img');
+      const captchaBlock = button.closest('.captcha-block');
+      const image = captchaBlock?.querySelector('.captcha-image img');
+      const input = captchaBlock?.querySelector('.captcha-input');
       if (!image) return;
+
       const base = image.src.split('?')[0];
       image.src = `${base}?t=${Date.now()}`;
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+    });
+  });
+
+  document.querySelectorAll('.captcha-input').forEach((input) => {
+    input.addEventListener('input', () => {
+      input.value = input.value.toUpperCase().replace(/[^A-Z2-9]/g, '').slice(0, 5);
     });
   });
 

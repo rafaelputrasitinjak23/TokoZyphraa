@@ -7,9 +7,15 @@
       <input type="hidden" name="next" value="<%= next %>">
       <label>Email<input type="email" name="email" required autocomplete="email" placeholder="nama@email.com"></label>
       <label>Kata sandi<input type="password" name="password" required autocomplete="current-password" placeholder="Kata sandi Anda"></label>
-      <div class="captcha-field">
-        <label>CAPTCHA<input type="text" name="captcha" required maxlength="10" autocomplete="off" placeholder="Ketik huruf pada gambar"></label>
-        <button class="captcha-image" type="button" data-captcha-refresh aria-label="Muat CAPTCHA baru"><img src="/auth/captcha/login.svg" alt="CAPTCHA login"></button>
+      <div class="captcha-block">
+        <div class="captcha-preview-row">
+          <div class="captcha-image"><img src="/auth/captcha/login.svg" alt="Kode CAPTCHA login"></div>
+          <button class="captcha-refresh" type="button" data-captcha-refresh>Ganti kode</button>
+        </div>
+        <label class="captcha-label">Ketik kode yang terlihat
+          <input class="captcha-input" type="text" name="captcha" required minlength="5" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CONTOH: A7K9P">
+        </label>
+        <p class="captcha-help">Ganti kode jika tulisan sulit dibaca.</p>
       </div>
       <button class="btn btn-primary btn-block" type="submit">Masuk</button>
     </form>

@@ -8,9 +8,15 @@
       <label>Email<input type="email" name="email" required autocomplete="email" placeholder="nama@email.com"></label>
       <label>Kata sandi<input type="password" name="password" required minlength="8" maxlength="72" autocomplete="new-password" placeholder="Minimal 8 karakter, huruf dan angka"></label>
       <label>Konfirmasi kata sandi<input type="password" name="passwordConfirm" required minlength="8" maxlength="72" autocomplete="new-password" placeholder="Ulangi kata sandi"></label>
-      <div class="captcha-field">
-        <label>CAPTCHA<input type="text" name="captcha" required maxlength="10" autocomplete="off" placeholder="Ketik huruf pada gambar"></label>
-        <button class="captcha-image" type="button" data-captcha-refresh aria-label="Muat CAPTCHA baru"><img src="/auth/captcha/register.svg" alt="CAPTCHA registrasi"></button>
+      <div class="captcha-block">
+        <div class="captcha-preview-row">
+          <div class="captcha-image"><img src="/auth/captcha/register.svg" alt="Kode CAPTCHA registrasi"></div>
+          <button class="captcha-refresh" type="button" data-captcha-refresh>Ganti kode</button>
+        </div>
+        <label class="captcha-label">Ketik kode yang terlihat
+          <input class="captcha-input" type="text" name="captcha" required minlength="5" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CONTOH: A7K9P">
+        </label>
+        <p class="captcha-help">Ganti kode jika tulisan sulit dibaca.</p>
       </div>
       <button class="btn btn-primary btn-block" type="submit">Kirim OTP Registrasi</button>
     </form>
