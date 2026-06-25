@@ -1,0 +1,27 @@
+<%- include('partials/header') %>
+<section class="section page-section">
+  <div class="container">
+    <div class="section-heading"><div><span class="eyebrow">KERANJANG</span><h1>Produk pilihan Anda</h1></div></div>
+    <% if (items.length) { %>
+      <div class="checkout-layout">
+        <form class="cart-list glass-card" method="post" action="/cart/update">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <% items.forEach((item) => { %>
+            <div class="cart-item">
+              <img src="<%= item.product.imageUrl || '/images/product-placeholder.svg' %>" alt="<%= item.product.name %>">
+              <div class="cart-copy"><a href="/products/<%= item.product.slug %>"><strong><%= item.product.name %></strong></a><span><%= formatRupiah(item.unitPrice) %> / item</span></div>
+              <input class="qty-input" type="number" min="1" max="<%= Math.min(item.product.stock, 10) %>" name="quantities[<%= item.product._id %>]" value="<%= item.quantity %>">
+              <strong><%= formatRupiah(item.lineTotal) %></strong>
+              <button class="text-button danger-text" type="submit" formaction="/cart/remove/<%= item.product._id %>" formmethod="post">Hapus</button>
+            </div>
+          <% }) %>
+          <button class="btn btn-ghost" type="submit">Perbarui Keranjang</button>
+        </form>
+        <aside class="summary-card glass-card"><h2>Ringkasan</h2><div class="summary-line"><span>Subtotal</span><strong><%= formatRupiah(subtotal) %></strong></div><div class="summary-line total"><span>Total sementara</span><strong><%= formatRupiah(subtotal) %></strong></div><a class="btn btn-primary btn-block" href="/checkout">Lanjut Checkout</a><a class="btn btn-ghost btn-block" href="/">Lanjut Belanja</a></aside>
+      </div>
+    <% } else { %>
+      <div class="empty-state glass-card"><h2>Keranjang masih kosong</h2><p>Tambahkan produk dari katalog untuk mulai berbelanja.</p><a class="btn btn-primary" href="/">Lihat Produk</a></div>
+    <% } %>
+  </div>
+</section>
+<%- include('partials/footer') %>

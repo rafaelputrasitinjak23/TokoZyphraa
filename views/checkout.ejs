@@ -1,0 +1,24 @@
+<%- include('partials/header') %>
+<section class="section page-section">
+  <div class="container">
+    <div class="section-heading"><div><span class="eyebrow">CHECKOUT</span><h1>Selesaikan pesanan</h1></div></div>
+    <form method="post" action="/checkout" class="checkout-layout">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="form-card glass-card">
+        <h2>Detail Pembayaran</h2>
+        <label>Kode voucher<input type="text" name="voucherCode" maxlength="40" placeholder="Contoh: ZYPHRA10"></label>
+        <label>Metode pembayaran<select name="paymentMethod"><option value="qris">QRIS</option><option value="bri_va">BRI Virtual Account</option><option value="bni_va">BNI Virtual Account</option><option value="cimb_niaga_va">CIMB Niaga Virtual Account</option><option value="permata_va">Permata Virtual Account</option><option value="atm_bersama_va">ATM Bersama</option></select></label>
+        <label class="check-row"><input type="checkbox" name="useWallet"><span>Gunakan saldo dompet <strong><%= formatRupiah(user.walletBalance) %></strong></span></label>
+        <div class="notice"><strong>Catatan:</strong> diskon voucher dan pemakaian saldo dihitung kembali oleh server saat pesanan dibuat.</div>
+      </div>
+      <aside class="summary-card glass-card">
+        <h2>Ringkasan Pesanan</h2>
+        <div class="mini-order-list"><% items.forEach((item) => { %><div><span><%= item.name || item.product.name %> × <%= item.quantity %></span><strong><%= formatRupiah(item.lineTotal) %></strong></div><% }) %></div>
+        <div class="summary-line total"><span>Subtotal</span><strong><%= formatRupiah(subtotal) %></strong></div>
+        <button class="btn btn-primary btn-block" type="submit">Buat Pesanan & Bayar</button>
+        <p class="tiny-copy">Dengan melanjutkan, Anda menyetujui detail harga dan metode pembayaran yang dipilih.</p>
+      </aside>
+    </form>
+  </div>
+</section>
+<%- include('partials/footer') %>

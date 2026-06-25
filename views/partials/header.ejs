@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="TokoZyphra - marketplace produk digital, promo, voucher, dan pembayaran praktis.">
+  <meta name="theme-color" content="#080b16">
+  <title><%= title ? `${title} | ${appName}` : appName %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a class="brand" href="/" aria-label="Beranda TokoZyphra">
+        <span class="brand-mark">Z</span>
+        <span>Toko<span>Zyphra</span></span>
+      </a>
+      <button class="nav-toggle" type="button" aria-label="Buka navigasi" aria-expanded="false" data-nav-toggle>☰</button>
+      <nav class="main-nav" data-nav>
+        <a class="<%= currentPath === '/' ? 'active' : '' %>" href="/">Produk</a>
+        <% if (currentUser?.role === 'user') { %>
+          <a href="/account">Dashboard</a>
+          <a href="/account/orders">Pesanan</a>
+          <a href="/account/wallet">Dompet</a>
+        <% } %>
+        <% if (currentUser?.role === 'admin') { %>
+          <a href="/admin">Admin</a>
+          <a href="/admin/products">Kelola Produk</a>
+        <% } %>
+      </nav>
+      <div class="nav-actions">
+        <% if (!isAdmin) { %>
+          <a class="cart-link" href="/cart" aria-label="Keranjang">Keranjang <span><%= cartCount %></span></a>
+        <% } %>
+        <% if (!currentUser) { %>
+          <a class="btn btn-ghost btn-sm" href="/auth/login">Masuk</a>
+          <a class="btn btn-primary btn-sm" href="/auth/register">Daftar</a>
+        <% } else { %>
+          <span class="user-chip"><%= currentUser.name %></span>
+          <form method="post" action="/auth/logout" class="inline-form">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button class="btn btn-ghost btn-sm" type="submit">Keluar</button>
+          </form>
+        <% } %>
+      </div>
+    </div>
+  </header>
+  <main>
+    <%- include('flash') %>

@@ -1,0 +1,22 @@
+<%- include('partials/header') %>
+<section class="section page-section">
+  <div class="container narrow">
+    <div class="payment-card glass-card">
+      <span class="status-pill status-<%= order.status %>"><%= order.status %></span>
+      <h1>Selesaikan Pembayaran</h1>
+      <p>Nomor pesanan <strong><%= order.orderNumber %></strong></p>
+      <% if (order.status === 'completed') { %>
+        <div class="success-icon">✓</div><h2>Pembayaran selesai</h2><a class="btn btn-primary" href="/account/orders/<%= order.orderNumber %>">Lihat Pesanan</a>
+      <% } else if (order.paymentNumber) { %>
+        <% if (qrDataUrl) { %><img class="qr-image" src="<%= qrDataUrl %>" alt="QRIS pembayaran"><p>Pindai QRIS di atas menggunakan aplikasi pembayaran Anda.</p><% } else { %><div class="payment-number"><span>Nomor pembayaran</span><strong><%= order.paymentNumber %></strong><button type="button" class="text-button" data-copy="<%= order.paymentNumber %>">Salin</button></div><% } %>
+        <div class="payment-summary"><div><span>Tagihan</span><strong><%= formatRupiah(order.payableAmount) %></strong></div><div><span>Biaya layanan</span><strong><%= formatRupiah(order.paymentFee) %></strong></div><div class="total"><span>Total pembayaran</span><strong><%= formatRupiah(order.totalPayment || order.payableAmount) %></strong></div></div>
+        <% if (order.paymentExpiresAt) { %><p class="expiry">Berlaku hingga <%= formatDate(order.paymentExpiresAt) %></p><% } %>
+        <form method="post" action="/checkout/payment/<%= order.orderNumber %>/check"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-primary btn-block" type="submit">Saya Sudah Membayar</button></form>
+      <% } else { %>
+        <div class="notice danger-notice">Kanal pembayaran belum berhasil dibuat. Pastikan konfigurasi Pakasir telah benar, lalu coba lagi.</div>
+        <form method="post" action="/checkout/payment/<%= order.orderNumber %>/retry" class="form-stack"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><label>Metode pembayaran<select name="paymentMethod"><option value="qris">QRIS</option><option value="bri_va">BRI VA</option><option value="bni_va">BNI VA</option><option value="permata_va">Permata VA</option></select></label><button class="btn btn-primary" type="submit">Buat Ulang Pembayaran</button></form>
+      <% } %>
+    </div>
+  </div>
+</section>
+<%- include('partials/footer') %>

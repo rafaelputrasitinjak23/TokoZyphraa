@@ -1,0 +1,8 @@
+<% if (flash) { %>
+  <div class="container flash-wrap">
+    <div class="alert alert-<%= flash.type %>" role="alert">
+      <span><%= flash.message %></span>
+      <button type="button" aria-label="Tutup" data-alert-close>×</button>
+    </div>
+  </div>
+<% } %>

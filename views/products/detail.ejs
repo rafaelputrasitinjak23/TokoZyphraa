@@ -1,0 +1,39 @@
+<%- include('../partials/header') %>
+<section class="section product-detail-section">
+  <div class="container product-detail-grid">
+    <div class="detail-image glass-card">
+      <img src="<%= product.imageUrl || '/images/product-placeholder.svg' %>" alt="<%= product.name %>">
+      <% if (product.discountPercent > 0) { %><span class="discount-badge large">Hemat <%= product.discountPercent %>%</span><% } %>
+    </div>
+    <div class="detail-copy">
+      <span class="category-label"><%= product.category %></span>
+      <h1><%= product.name %></h1>
+      <div class="rating-row detail-rating"><span>★ <%= Number(product.averageRating || 0).toFixed(1) %> dari <%= product.reviewCount %> ulasan</span><span><%= product.soldCount %> terjual</span></div>
+      <p class="lead"><%= product.shortDescription %></p>
+      <div class="detail-price">
+        <% if (product.effectivePrice < product.price) { %><del><%= formatRupiah(product.price) %></del><% } %>
+        <strong><%= product.effectivePrice === 0 ? 'Gratis' : formatRupiah(product.effectivePrice) %></strong>
+      </div>
+      <div class="stock-line"><span class="status-dot"><%= product.stock > 0 ? `Stok tersedia: ${product.stock}` : 'Stok habis' %></span><span>Pengiriman: <%= product.deliveryType === 'digital' ? 'Digital' : 'Fisik' %></span></div>
+      <form method="post" action="/cart/add/<%= product._id %>" class="buy-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <label>Jumlah<input type="number" name="quantity" value="1" min="1" max="<%= Math.min(product.stock, 10) %>"></label>
+        <button class="btn btn-primary" type="submit" name="buyNow" value="1" <%= product.stock < 1 ? 'disabled' : '' %>>Tambah ke Keranjang</button>
+      </form>
+      <div class="benefit-list"><span>✓ Pembayaran Pakasir</span><span>✓ Voucher dan saldo dompet</span><span>✓ Ulasan pembeli terverifikasi</span></div>
+    </div>
+  </div>
+</section>
+<section class="section no-top">
+  <div class="container detail-content-grid">
+    <article class="content-card glass-card"><h2>Deskripsi Produk</h2><div class="preline"><%= product.description %></div></article>
+    <aside class="content-card glass-card"><h3>Informasi</h3><dl><div><dt>Kategori</dt><dd><%= product.category %></dd></div><div><dt>Tipe</dt><dd><%= product.deliveryType %></dd></div><div><dt>Status</dt><dd><%= product.isActive ? 'Aktif' : 'Tidak aktif' %></dd></div></dl></aside>
+  </div>
+</section>
+<section class="section no-top">
+  <div class="container narrow-wide">
+    <div class="section-heading"><div><span class="eyebrow">ULASAN</span><h2>Pengalaman pembeli</h2></div></div>
+    <% if (reviews.length) { %><div class="review-list"><% reviews.forEach((review) => { %><article class="review-card glass-card"><div><strong><%= review.user?.name || 'Pengguna' %></strong><span class="stars"><%= '★'.repeat(review.rating) %><%= '☆'.repeat(5-review.rating) %></span></div><p><%= review.comment %></p><small><%= formatDate(review.createdAt) %></small></article><% }) %></div><% } else { %><div class="empty-state glass-card"><p>Belum ada ulasan untuk produk ini.</p></div><% } %>
+  </div>
+</section>
+<%- include('../partials/footer') %>

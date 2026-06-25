@@ -1,0 +1,19 @@
+<%- include('../partials/header') %>
+<section class="auth-section">
+  <div class="auth-card glass-card">
+    <div class="auth-heading"><span class="eyebrow">SELAMAT DATANG</span><h1>Masuk ke akun</h1><p>Gunakan email dan kata sandi yang telah diverifikasi saat registrasi.</p></div>
+    <form method="post" action="/auth/login" class="form-stack">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="next" value="<%= next %>">
+      <label>Email<input type="email" name="email" required autocomplete="email" placeholder="nama@email.com"></label>
+      <label>Kata sandi<input type="password" name="password" required autocomplete="current-password" placeholder="Kata sandi Anda"></label>
+      <div class="captcha-field">
+        <label>CAPTCHA<input type="text" name="captcha" required maxlength="10" autocomplete="off" placeholder="Ketik huruf pada gambar"></label>
+        <button class="captcha-image" type="button" data-captcha-refresh aria-label="Muat CAPTCHA baru"><img src="/auth/captcha/login.svg" alt="CAPTCHA login"></button>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Masuk</button>
+    </form>
+    <p class="auth-switch">Belum memiliki akun? <a href="/auth/register">Daftar sekarang</a></p>
+  </div>
+</section>
+<%- include('../partials/footer') %>
