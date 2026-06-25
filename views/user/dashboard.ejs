@@ -3,11 +3,11 @@
   <div class="container">
     <div class="section-heading account-heading">
       <div>
-        <span class="eyebrow">AKUN SAYA</span>
+        <span class="eyebrow"><svg class="svg-icon" aria-hidden="true"><use href="#icon-dashboard"></use></svg>AKUN SAYA</span>
         <h1>Halo, <%= user.name %></h1>
         <p>Pantau pembelian, saldo, dan data profil Anda dari satu halaman.</p>
       </div>
-      <a class="btn btn-ghost" href="/account/profile">Edit Profil</a>
+      <a class="btn btn-ghost btn-icon-label" href="/account/profile"><svg class="svg-icon" aria-hidden="true"><use href="#icon-edit"></use></svg><span>Edit Profil</span></a>
     </div>
 
     <div class="account-overview">
@@ -22,38 +22,42 @@
         <div>
           <strong><%= user.name %></strong>
           <span><%= user.email %></span>
-          <small><%= user.emailVerifiedAt ? 'Email terverifikasi' : 'Email belum terverifikasi' %></small>
+          <small><svg class="svg-icon" aria-hidden="true"><use href="#icon-check-circle"></use></svg><%= user.emailVerifiedAt ? 'Email terverifikasi' : 'Email belum terverifikasi' %></small>
         </div>
-        <a href="/account/profile">Kelola akun →</a>
+        <a class="btn-icon-label" href="/account/profile"><span>Kelola akun</span><svg class="svg-icon" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a>
       </article>
 
       <div class="stats-grid account-stats">
-        <div class="stat-card glass-card">
+        <div class="stat-card glass-card market-stat-card">
+          <span class="market-icon market-icon-blue"><svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg></span>
           <span>Total Produk Dibeli</span>
           <strong><%= purchaseStats.totalProducts %></strong>
           <small><%= purchaseStats.uniqueProducts %> produk berbeda</small>
         </div>
-        <div class="stat-card glass-card">
+        <div class="stat-card glass-card market-stat-card">
+          <span class="market-icon market-icon-green"><svg class="svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg></span>
           <span>Pesanan Selesai</span>
           <strong><%= purchaseStats.completedOrders %></strong>
           <a href="/account/orders">Lihat pesanan</a>
         </div>
-        <div class="stat-card glass-card">
+        <div class="stat-card glass-card market-stat-card">
+          <span class="market-icon market-icon-orange"><svg class="svg-icon" aria-hidden="true"><use href="#icon-receipt"></use></svg></span>
           <span>Total Nilai Belanja</span>
           <strong><%= formatRupiah(purchaseStats.totalSpent) %></strong>
           <small>Setelah diskon dan voucher</small>
         </div>
-        <div class="stat-card glass-card">
+        <div class="stat-card glass-card market-stat-card">
+          <span class="market-icon market-icon-purple"><svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg></span>
           <span>Saldo Dompet</span>
           <strong><%= formatRupiah(user.walletBalance) %></strong>
-          <a href="/account/wallet">Riwayat saldo</a>
+          <a href="/account/wallet">Top up & riwayat</a>
         </div>
       </div>
     </div>
 
     <div class="section-heading subheading">
       <div><h2>Pesanan Terbaru</h2></div>
-      <a class="text-link" href="/account/orders">Semua pesanan →</a>
+      <a class="text-link btn-icon-label" href="/account/orders"><span>Semua pesanan</span><svg class="svg-icon" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a>
     </div>
     <% if (recentOrders.length) { %>
       <div class="table-card glass-card">
@@ -67,7 +71,7 @@
                   <td><%= formatDate(order.createdAt) %></td>
                   <td><%= formatRupiah(order.payableAmount + order.walletUsed) %></td>
                   <td><span class="status-pill status-<%= order.status %>"><%= order.status %></span></td>
-                  <td><a href="/account/orders/<%= order.orderNumber %>">Detail</a></td>
+                  <td><a class="btn-icon-label" href="/account/orders/<%= order.orderNumber %>"><span>Detail</span><svg class="svg-icon" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a></td>
                 </tr>
               <% }) %>
             </tbody>
@@ -75,10 +79,7 @@
         </div>
       </div>
     <% } else { %>
-      <div class="empty-state glass-card">
-        <p>Belum ada pesanan.</p>
-        <a class="btn btn-primary" href="/">Mulai Belanja</a>
-      </div>
+      <div class="empty-state glass-card"><svg class="empty-state-icon svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg><h2>Belum ada pesanan</h2><p>Mulai pilih produk untuk melihat ringkasan pembelian di sini.</p><a class="btn btn-primary btn-icon-label" href="/"><svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg><span>Belanja Sekarang</span></a></div>
     <% } %>
   </div>
 </section>

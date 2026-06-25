@@ -3,15 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="TokoZyphra - marketplace produk digital, promo, voucher, dan pembayaran praktis.">
-  <meta name="theme-color" content="#f7f8fc">
+  <meta name="description" content="TokoZyphra - marketplace produk digital, promo, voucher, dompet, dan pembayaran praktis.">
+  <meta name="theme-color" content="#ffffff">
   <title><%= title ? `${title} | ${appName}` : appName %></title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
+<body class="<%= isAdmin ? 'admin-shell' : 'market-shell' %>">
+  <%- include('icon-sprite') %>
   <div class="ambient ambient-one"></div>
   <div class="ambient ambient-two"></div>
   <header class="site-header">
@@ -20,23 +21,50 @@
         <span class="brand-mark">Z</span>
         <span>Toko<span>Zyphra</span></span>
       </a>
-      <button class="nav-toggle" type="button" aria-label="Buka navigasi" aria-expanded="false" data-nav-toggle>☰</button>
+      <button class="nav-toggle" type="button" aria-label="Buka navigasi" aria-expanded="false" data-nav-toggle>
+        <svg class="svg-icon" aria-hidden="true"><use href="#icon-menu"></use></svg>
+      </button>
       <nav class="main-nav" data-nav>
-        <a class="<%= currentPath === '/' ? 'active' : '' %>" href="/">Produk</a>
+        <a class="<%= currentPath === '/' ? 'active' : '' %>" href="/#catalog">
+          <svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg>
+          <span>Produk</span>
+        </a>
         <% if (currentUser?.role === 'user') { %>
-          <a class="<%= currentPath === '/account' ? 'active' : '' %>" href="/account">Dashboard</a>
-          <a class="<%= currentPath.startsWith('/account/orders') ? 'active' : '' %>" href="/account/orders">Pesanan</a>
-          <a class="<%= currentPath === '/account/wallet' ? 'active' : '' %>" href="/account/wallet">Dompet</a>
-          <a class="<%= currentPath === '/account/profile' ? 'active' : '' %>" href="/account/profile">Profil</a>
+          <a class="<%= currentPath === '/account' ? 'active' : '' %>" href="/account">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-dashboard"></use></svg>
+            <span>Dashboard</span>
+          </a>
+          <a class="<%= currentPath.startsWith('/account/orders') ? 'active' : '' %>" href="/account/orders">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg>
+            <span>Pesanan</span>
+          </a>
+          <a class="<%= currentPath.startsWith('/account/wallet') ? 'active' : '' %>" href="/account/wallet">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg>
+            <span>Dompet</span>
+          </a>
+          <a class="<%= currentPath === '/account/profile' ? 'active' : '' %>" href="/account/profile">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-user"></use></svg>
+            <span>Profil</span>
+          </a>
         <% } %>
         <% if (currentUser?.role === 'admin') { %>
-          <a href="/admin">Admin</a>
-          <a href="/admin/products">Kelola Produk</a>
+          <a class="<%= currentPath === '/admin' ? 'active' : '' %>" href="/admin">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-dashboard"></use></svg>
+            <span>Admin</span>
+          </a>
+          <a class="<%= currentPath.startsWith('/admin/products') ? 'active' : '' %>" href="/admin/products">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg>
+            <span>Kelola Produk</span>
+          </a>
         <% } %>
       </nav>
       <div class="nav-actions">
         <% if (!isAdmin) { %>
-          <a class="cart-link" href="/cart" aria-label="Keranjang">Keranjang <span><%= cartCount %></span></a>
+          <a class="cart-link" href="/cart" aria-label="Keranjang, <%= cartCount %> produk">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-cart"></use></svg>
+            <span class="cart-link-label">Keranjang</span>
+            <% if (cartCount > 0) { %><b><%= cartCount %></b><% } %>
+          </a>
         <% } %>
         <% if (!currentUser) { %>
           <a class="btn btn-ghost btn-sm" href="/auth/login">Masuk</a>
@@ -56,13 +84,45 @@
           <% } else { %>
             <span class="user-chip admin-chip"><span class="user-chip-name"><%= currentUser.name %></span></span>
           <% } %>
-          <form method="post" action="/auth/logout" class="inline-form">
+          <form method="post" action="/auth/logout" class="inline-form header-logout">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <button class="btn btn-ghost btn-sm" type="submit">Keluar</button>
+            <button class="btn btn-ghost btn-sm btn-icon-label" type="submit">
+              <svg class="svg-icon" aria-hidden="true"><use href="#icon-logout"></use></svg>
+              <span>Keluar</span>
+            </button>
           </form>
         <% } %>
       </div>
     </div>
   </header>
+
+  <% if (!isAdmin) { %>
+    <nav class="mobile-market-nav" aria-label="Navigasi utama mobile">
+      <a class="<%= currentPath === '/' ? 'active' : '' %>" href="/#catalog">
+        <svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg>
+        <span>Produk</span>
+      </a>
+      <a class="<%= currentPath === '/cart' || currentPath.startsWith('/checkout') ? 'active' : '' %>" href="/cart">
+        <span class="mobile-nav-icon">
+          <svg class="svg-icon" aria-hidden="true"><use href="#icon-cart"></use></svg>
+          <% if (cartCount > 0) { %><b><%= cartCount > 99 ? '99+' : cartCount %></b><% } %>
+        </span>
+        <span>Keranjang</span>
+      </a>
+      <a class="<%= currentPath.startsWith('/account/wallet') ? 'active' : '' %>" href="<%= currentUser?.role === 'user' ? '/account/wallet' : '/auth/login' %>">
+        <svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg>
+        <span>Dompet</span>
+      </a>
+      <a class="<%= currentPath.startsWith('/account/orders') ? 'active' : '' %>" href="<%= currentUser?.role === 'user' ? '/account/orders' : '/auth/login' %>">
+        <svg class="svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg>
+        <span>Pesanan</span>
+      </a>
+      <a class="<%= currentPath === '/account/profile' || currentPath === '/account' ? 'active' : '' %>" href="<%= currentUser?.role === 'user' ? '/account/profile' : '/auth/login' %>">
+        <svg class="svg-icon" aria-hidden="true"><use href="#icon-user"></use></svg>
+        <span>Profil</span>
+      </a>
+    </nav>
+  <% } %>
+
   <main>
     <%- include('flash') %>

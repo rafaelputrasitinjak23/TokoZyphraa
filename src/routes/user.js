@@ -1,18 +1,40 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const mongoose = require('mongoose');
+const QRCode = require('qrcode');
 const User = require('../models/User');
 const Order = require('../models/Order');
 const Review = require('../models/Review');
 const Product = require('../models/Product');
 const WalletTransaction = require('../models/WalletTransaction');
+const WalletTopup = require('../models/WalletTopup');
 const { requireUser } = require('../middleware/auth');
-const { authLimiter } = require('../middleware/rateLimits');
+const { authLimiter, paymentLimiter } = require('../middleware/rateLimits');
 const asyncHandler = require('../utils/asyncHandler');
 const { cancelPendingOrderSafely } = require('../services/orderCancellation');
+const { createTransaction, getTransactionDetail } = require('../services/pakasir');
+const { completeWalletTopup } = require('../services/walletTopup');
 
 const router = express.Router();
 const MAX_AVATAR_BYTES = 400 * 1024;
+const MIN_TOPUP = 10000;
+const MAX_TOPUP = 10000000;
+const TOPUP_PRESETS = [20000, 50000, 100000, 250000, 500000, 1000000];
+const TOPUP_METHODS = new Set([
+  'qris', 'cimb_niaga_va', 'bni_va', 'sampoerna_va', 'bnc_va',
+  'maybank_va', 'permata_va', 'atm_bersama_va', 'artha_graha_va', 'bri_va'
+]);
+
+function makeTopupNumber() {
+  return `TZTOP-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+}
+
+function verifyPakasirTransaction(transaction, reference, amount) {
+  return transaction.order_id === reference &&
+    Number(transaction.amount) === amount &&
+    transaction.project === process.env.PAKASIR_PROJECT_SLUG;
+}
 
 router.use(requireUser);
 
@@ -241,11 +263,159 @@ router.post('/orders/:orderNumber/cancel', asyncHandler(async (req, res) => {
 }));
 
 router.get('/wallet', asyncHandler(async (req, res) => {
-  const [user, transactions] = await Promise.all([
-    User.findById(req.session.user.id).lean(),
-    WalletTransaction.find({ user: req.session.user.id }).sort({ createdAt: -1 }).limit(100).lean()
+  const userId = req.session.user.id;
+  const [user, transactions, topups, summaryRows] = await Promise.all([
+    User.findById(userId).lean(),
+    WalletTransaction.find({ user: userId }).sort({ createdAt: -1 }).limit(150).lean(),
+    WalletTopup.find({ user: userId }).sort({ createdAt: -1 }).limit(25).lean(),
+    WalletTransaction.aggregate([
+      { $match: { user: new mongoose.Types.ObjectId(userId) } },
+      {
+        $group: {
+          _id: null,
+          totalCredit: { $sum: { $cond: [{ $eq: ['$type', 'credit'] }, '$amount', 0] } },
+          totalDebit: { $sum: { $cond: [{ $eq: ['$type', 'debit'] }, '$amount', 0] } },
+          totalTopup: { $sum: { $cond: [{ $eq: ['$source', 'topup'] }, '$amount', 0] } }
+        }
+      }
+    ])
   ]);
-  res.render('user/wallet', { title: 'Dompet Saya', user, transactions });
+
+  const enrichedTransactions = transactions.map((transaction) => ({
+    ...transaction,
+    historyKind: transaction.source === 'topup'
+      ? 'topup'
+      : transaction.type === 'debit' ? 'usage' : 'credit'
+  }));
+
+  res.render('user/wallet', {
+    title: 'Dompet Saya',
+    user,
+    transactions: enrichedTransactions,
+    topups,
+    topupPresets: TOPUP_PRESETS,
+    walletSummary: summaryRows[0] || { totalCredit: 0, totalDebit: 0, totalTopup: 0 }
+  });
+}));
+
+router.post('/wallet/topup', paymentLimiter, asyncHandler(async (req, res) => {
+  const amount = Math.floor(Number(req.body.amount || 0));
+  const paymentMethod = TOPUP_METHODS.has(req.body.paymentMethod) ? req.body.paymentMethod : 'qris';
+
+  if (!Number.isSafeInteger(amount) || amount < MIN_TOPUP || amount > MAX_TOPUP) {
+    req.flash('error', `Nominal top up harus antara Rp10.000 dan Rp10.000.000.`);
+    return res.redirect('/account/wallet#topup');
+  }
+
+  const topup = await WalletTopup.create({
+    topupNumber: makeTopupNumber(),
+    user: req.session.user.id,
+    amount,
+    paymentMethod
+  });
+
+  try {
+    const payment = await createTransaction({
+      orderId: topup.topupNumber,
+      amount: topup.amount,
+      method: paymentMethod
+    });
+    topup.paymentFee = Number(payment.fee || 0);
+    topup.totalPayment = Number(payment.total_payment || topup.amount);
+    topup.paymentMethod = payment.payment_method || paymentMethod;
+    topup.paymentNumber = payment.payment_number || null;
+    topup.paymentExpiresAt = payment.expired_at ? new Date(payment.expired_at) : null;
+    await topup.save();
+  } catch (error) {
+    topup.notes = `Pembuatan transaksi Pakasir gagal: ${error.message}`;
+    await topup.save();
+    req.flash('error', 'Permintaan top up tersimpan, tetapi kanal pembayaran belum berhasil dibuat.');
+  }
+
+  res.redirect(`/account/wallet/topup/${topup.topupNumber}`);
+}));
+
+router.get('/wallet/topup/:topupNumber', asyncHandler(async (req, res) => {
+  const topup = await WalletTopup.findOne({
+    topupNumber: req.params.topupNumber,
+    user: req.session.user.id
+  }).lean();
+  if (!topup) {
+    return res.status(404).render('error', {
+      title: 'Top Up Tidak Ditemukan',
+      status: 404,
+      message: 'Permintaan top up tidak tersedia.'
+    });
+  }
+
+  const qrDataUrl = topup.paymentMethod === 'qris' && topup.paymentNumber
+    ? await QRCode.toDataURL(topup.paymentNumber, { width: 320, margin: 1 })
+    : null;
+  res.render('user/topup-payment', {
+    title: `Top Up ${topup.topupNumber}`,
+    topup,
+    qrDataUrl
+  });
+}));
+
+router.post('/wallet/topup/:topupNumber/retry', paymentLimiter, asyncHandler(async (req, res) => {
+  const topup = await WalletTopup.findOne({
+    topupNumber: req.params.topupNumber,
+    user: req.session.user.id
+  });
+  if (!topup || topup.status === 'completed' || topup.credited) {
+    req.flash('error', 'Top up ini tidak dapat dibuat ulang.');
+    return res.redirect('/account/wallet');
+  }
+
+  const paymentMethod = TOPUP_METHODS.has(req.body.paymentMethod)
+    ? req.body.paymentMethod
+    : (topup.paymentMethod || 'qris');
+  const payment = await createTransaction({
+    orderId: topup.topupNumber,
+    amount: topup.amount,
+    method: paymentMethod
+  });
+
+  topup.status = 'pending';
+  topup.paymentFee = Number(payment.fee || 0);
+  topup.totalPayment = Number(payment.total_payment || topup.amount);
+  topup.paymentMethod = payment.payment_method || paymentMethod;
+  topup.paymentNumber = payment.payment_number || null;
+  topup.paymentExpiresAt = payment.expired_at ? new Date(payment.expired_at) : null;
+  await topup.save();
+
+  req.flash('success', 'Kanal pembayaran top up berhasil dibuat.');
+  res.redirect(`/account/wallet/topup/${topup.topupNumber}`);
+}));
+
+router.post('/wallet/topup/:topupNumber/check', paymentLimiter, asyncHandler(async (req, res) => {
+  const topup = await WalletTopup.findOne({
+    topupNumber: req.params.topupNumber,
+    user: req.session.user.id
+  });
+  if (!topup) return res.sendStatus(404);
+  if (topup.status === 'completed' && topup.credited) {
+    return res.redirect('/account/wallet');
+  }
+
+  const transaction = await getTransactionDetail({
+    orderId: topup.topupNumber,
+    amount: topup.amount
+  });
+  const valid = verifyPakasirTransaction(transaction, topup.topupNumber, topup.amount);
+
+  if (valid && transaction.status === 'completed') {
+    await completeWalletTopup(
+      topup,
+      transaction.completed_at ? new Date(transaction.completed_at) : new Date()
+    );
+    req.flash('success', `Top up ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(topup.amount)} berhasil masuk ke dompet.`);
+    return res.redirect('/account/wallet');
+  }
+
+  req.flash('error', `Pembayaran top up belum selesai. Status saat ini: ${transaction.status || 'pending'}.`);
+  res.redirect(`/account/wallet/topup/${topup.topupNumber}`);
 }));
 
 router.post('/reviews/:productId', asyncHandler(async (req, res) => {

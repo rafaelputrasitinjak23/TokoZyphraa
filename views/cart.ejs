@@ -1,7 +1,7 @@
 <%- include('partials/header') %>
 <section class="section page-section">
   <div class="container">
-    <div class="section-heading"><div><span class="eyebrow">KERANJANG</span><h1>Produk pilihan Anda</h1></div></div>
+    <div class="section-heading"><div><span class="eyebrow"><svg class="svg-icon" aria-hidden="true"><use href="#icon-cart"></use></svg>KERANJANG</span><h1>Produk pilihan Anda</h1></div></div>
     <% if (items.length) { %>
       <div class="checkout-layout">
         <form class="cart-list glass-card" method="post" action="/cart/update">
@@ -12,15 +12,15 @@
               <div class="cart-copy"><a href="/products/<%= item.product.slug %>"><strong><%= item.product.name %></strong></a><span><%= formatRupiah(item.unitPrice) %> / item</span></div>
               <input class="qty-input" type="number" min="1" max="<%= Math.min(item.product.stock, 10) %>" name="quantities[<%= item.product._id %>]" value="<%= item.quantity %>">
               <strong><%= formatRupiah(item.lineTotal) %></strong>
-              <button class="text-button danger-text" type="submit" formaction="/cart/remove/<%= item.product._id %>" formmethod="post">Hapus</button>
+              <button class="text-button danger-text btn-icon-label" type="submit" formaction="/cart/remove/<%= item.product._id %>" formmethod="post"><svg class="svg-icon" aria-hidden="true"><use href="#icon-receipt"></use></svg><span>Hapus</span></button>
             </div>
           <% }) %>
-          <button class="btn btn-ghost" type="submit">Perbarui Keranjang</button>
+          <button class="btn btn-ghost btn-icon-label" type="submit"><svg class="svg-icon" aria-hidden="true"><use href="#icon-history"></use></svg><span>Perbarui Keranjang</span></button>
         </form>
-        <aside class="summary-card glass-card"><h2>Ringkasan</h2><div class="summary-line"><span>Subtotal</span><strong><%= formatRupiah(subtotal) %></strong></div><div class="summary-line total"><span>Total sementara</span><strong><%= formatRupiah(subtotal) %></strong></div><a class="btn btn-primary btn-block" href="/checkout">Lanjut Checkout</a><a class="btn btn-ghost btn-block" href="/">Lanjut Belanja</a></aside>
+        <aside class="summary-card glass-card"><h2>Ringkasan</h2><div class="summary-line"><span>Subtotal</span><strong><%= formatRupiah(subtotal) %></strong></div><div class="summary-line total"><span>Total sementara</span><strong><%= formatRupiah(subtotal) %></strong></div><a class="btn btn-primary btn-block btn-icon-label" href="/checkout"><svg class="svg-icon" aria-hidden="true"><use href="#icon-arrow-right"></use></svg><span>Lanjut Checkout</span></a><a class="btn btn-ghost btn-block btn-icon-label" href="/"><svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg><span>Lanjut Belanja</span></a></aside>
       </div>
     <% } else { %>
-      <div class="empty-state glass-card"><h2>Keranjang masih kosong</h2><p>Tambahkan produk dari katalog untuk mulai berbelanja.</p><a class="btn btn-primary" href="/">Lihat Produk</a></div>
+      <div class="empty-state glass-card"><svg class="empty-state-icon svg-icon" aria-hidden="true"><use href="#icon-cart"></use></svg><h2>Keranjang masih kosong</h2><p>Tambahkan produk dari katalog untuk mulai berbelanja.</p><a class="btn btn-primary btn-icon-label" href="/"><svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg><span>Lihat Produk</span></a></div>
     <% } %>
   </div>
 </section>

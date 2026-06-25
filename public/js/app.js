@@ -151,6 +151,40 @@
     setAvatarMessage('Foto profil akan dihapus setelah perubahan disimpan.');
   });
 
+
+  const topupAmount = document.querySelector('[data-topup-amount]');
+  const topupPresetButtons = document.querySelectorAll('[data-topup-preset]');
+  topupPresetButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      if (!topupAmount) return;
+      topupAmount.value = button.dataset.topupPreset || '';
+      topupPresetButtons.forEach((item) => item.classList.toggle('active', item === button));
+      topupAmount.focus();
+    });
+  });
+  topupAmount?.addEventListener('input', () => {
+    topupPresetButtons.forEach((button) => {
+      button.classList.toggle('active', Number(button.dataset.topupPreset) === Number(topupAmount.value));
+    });
+  });
+
+  const walletHistory = document.querySelector('[data-wallet-history]');
+  const walletFilterButtons = document.querySelectorAll('[data-wallet-filter]');
+  const walletFilterEmpty = document.querySelector('[data-wallet-filter-empty]');
+  walletFilterButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const filter = button.dataset.walletFilter || 'all';
+      let visibleCount = 0;
+      walletFilterButtons.forEach((item) => item.classList.toggle('active', item === button));
+      walletHistory?.querySelectorAll('[data-wallet-kind]').forEach((item) => {
+        const visible = filter === 'all' || item.dataset.walletKind === filter;
+        item.hidden = !visible;
+        if (visible) visibleCount += 1;
+      });
+      if (walletFilterEmpty) walletFilterEmpty.hidden = visibleCount > 0;
+    });
+  });
+
   const countdown = document.querySelector('[data-countdown]');
   if (countdown) {
     const target = new Date(countdown.dataset.countdown).getTime();

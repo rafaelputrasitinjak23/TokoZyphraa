@@ -6,11 +6,11 @@
       <h1>Temukan Produk <span>Terbaik</span> untuk Kebutuhanmu</h1>
       <p>Belanja lebih praktis dengan promo flash sale, voucher eksklusif, dompet pengguna, dan pembayaran instan melalui Pakasir.</p>
       <div class="hero-actions">
-        <a class="btn btn-primary" href="#catalog">Mulai Belanja</a>
-        <% if (!currentUser) { %><a class="btn btn-ghost" href="/auth/register">Buat Akun Gratis</a><% } %>
+        <a class="btn btn-primary btn-icon-label" href="#catalog"><svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg><span>Mulai Belanja</span></a>
+        <% if (!currentUser) { %><a class="btn btn-ghost btn-icon-label" href="/auth/register"><svg class="svg-icon" aria-hidden="true"><use href="#icon-user"></use></svg><span>Buat Akun Gratis</span></a><% } %>
       </div>
       <div class="trust-row">
-        <span>✓ Pembayaran terverifikasi</span><span>✓ Produk digital instan</span><span>✓ Ulasan pembeli</span>
+        <span><svg class="svg-icon" aria-hidden="true"><use href="#icon-shield-check"></use></svg>Pembayaran terverifikasi</span><span><svg class="svg-icon" aria-hidden="true"><use href="#icon-zap"></use></svg>Produk digital instan</span><span><svg class="svg-icon" aria-hidden="true"><use href="#icon-star"></use></svg>Ulasan pembeli</span>
       </div>
     </div>
     <div class="hero-panel glass-card">
@@ -30,7 +30,7 @@
 <% if (flashSaleProducts.length) { %>
 <section class="section flash-section">
   <div class="container">
-    <div class="section-heading"><div><span class="eyebrow danger">FLASH SALE</span><h2>Penawaran waktu terbatas</h2></div><div class="countdown" data-countdown="<%= new Date(flashSaleProducts[0].flashSaleEnd).toISOString() %>"><b data-hours>00</b><span>:</span><b data-minutes>00</b><span>:</span><b data-seconds>00</b></div></div>
+    <div class="section-heading"><div><span class="eyebrow danger"><svg class="svg-icon" aria-hidden="true"><use href="#icon-zap"></use></svg>FLASH SALE</span><h2>Penawaran waktu terbatas</h2></div><div class="countdown" data-countdown="<%= new Date(flashSaleProducts[0].flashSaleEnd).toISOString() %>"><b data-hours>00</b><span>:</span><b data-minutes>00</b><span>:</span><b data-seconds>00</b></div></div>
     <div class="product-grid compact-grid">
       <% flashSaleProducts.forEach((product) => { %><%- include('partials/product-card', { product }) %><% }) %>
     </div>
@@ -44,12 +44,12 @@
       <div><span class="eyebrow">KATALOG</span><h2>Produk pilihan TokoZyphra</h2></div>
     </div>
     <form class="catalog-filter glass-card" method="get" action="/">
-      <input type="search" name="q" value="<%= search %>" placeholder="Cari produk..." aria-label="Cari produk">
+      <div class="search-input-wrap"><svg class="svg-icon" aria-hidden="true"><use href="#icon-search"></use></svg><input type="search" name="q" value="<%= search %>" placeholder="Cari produk..." aria-label="Cari produk"></div>
       <select name="category" aria-label="Pilih kategori">
         <option value="">Semua kategori</option>
         <% categories.forEach((item) => { %><option value="<%= item %>" <%= category === item ? 'selected' : '' %>><%= item %></option><% }) %>
       </select>
-      <button class="btn btn-primary" type="submit">Cari</button>
+      <button class="btn btn-primary btn-icon-label" type="submit"><svg class="svg-icon" aria-hidden="true"><use href="#icon-search"></use></svg><span>Cari</span></button>
     </form>
     <% if (products.length) { %>
       <div class="product-grid">

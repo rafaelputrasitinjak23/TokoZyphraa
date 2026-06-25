@@ -1,0 +1,69 @@
+<%- include('../partials/header') %>
+<section class="section page-section">
+  <div class="container narrow">
+    <div class="payment-card topup-payment-card glass-card">
+      <div class="payment-title-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg></div>
+      <span class="status-pill status-<%= topup.status %>"><%= topup.status.replace('_', ' ') %></span>
+      <h1>Pembayaran Top Up</h1>
+      <p>Referensi <strong><%= topup.topupNumber %></strong></p>
+
+      <% if (topup.status === 'completed' && topup.credited) { %>
+        <div class="success-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-check-circle"></use></svg></div>
+        <h2>Saldo berhasil ditambahkan</h2>
+        <p>Top up sebesar <strong><%= formatRupiah(topup.amount) %></strong> sudah masuk ke dompet Anda.</p>
+        <a class="btn btn-primary btn-icon-label" href="/account/wallet">
+          <svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg>
+          <span>Lihat Dompet</span>
+        </a>
+      <% } else if (topup.paymentNumber) { %>
+        <% if (qrDataUrl) { %>
+          <img class="qr-image" src="<%= qrDataUrl %>" alt="QRIS pembayaran top up">
+          <p>Pindai QRIS menggunakan aplikasi bank atau dompet digital Anda.</p>
+        <% } else { %>
+          <div class="payment-number">
+            <span>Nomor pembayaran</span>
+            <strong><%= topup.paymentNumber %></strong>
+            <button type="button" class="text-button btn-icon-label" data-copy="<%= topup.paymentNumber %>">
+              <svg class="svg-icon" aria-hidden="true"><use href="#icon-receipt"></use></svg>
+              <span>Salin</span>
+            </button>
+          </div>
+        <% } %>
+
+        <div class="payment-summary">
+          <div><span>Saldo yang diterima</span><strong><%= formatRupiah(topup.amount) %></strong></div>
+          <div><span>Biaya layanan</span><strong><%= formatRupiah(topup.paymentFee) %></strong></div>
+          <div class="total"><span>Total pembayaran</span><strong><%= formatRupiah(topup.totalPayment || topup.amount) %></strong></div>
+        </div>
+        <% if (topup.paymentExpiresAt) { %><p class="expiry">Berlaku hingga <%= formatDate(topup.paymentExpiresAt) %></p><% } %>
+
+        <form method="post" action="/account/wallet/topup/<%= topup.topupNumber %>/check">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn-primary btn-block btn-icon-label" type="submit">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-check-circle"></use></svg>
+            <span>Saya Sudah Membayar</span>
+          </button>
+        </form>
+        <a class="btn btn-ghost btn-block" href="/account/wallet">Kembali ke Dompet</a>
+      <% } else { %>
+        <div class="notice danger-notice">Kanal pembayaran belum berhasil dibuat. Periksa konfigurasi Pakasir lalu coba kembali.</div>
+        <form method="post" action="/account/wallet/topup/<%= topup.topupNumber %>/retry" class="form-stack">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <label>Metode pembayaran
+            <select name="paymentMethod">
+              <option value="qris">QRIS</option>
+              <option value="bri_va">BRI Virtual Account</option>
+              <option value="bni_va">BNI Virtual Account</option>
+              <option value="permata_va">Permata Virtual Account</option>
+            </select>
+          </label>
+          <button class="btn btn-primary btn-icon-label" type="submit">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+            <span>Buat Ulang Pembayaran</span>
+          </button>
+        </form>
+      <% } %>
+    </div>
+  </div>
+</section>
+<%- include('../partials/footer') %>

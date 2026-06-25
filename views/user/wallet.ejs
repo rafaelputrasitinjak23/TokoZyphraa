@@ -1,4 +1,185 @@
 <%- include('../partials/header') %>
-<section class="section page-section"><div class="container"><div class="wallet-hero glass-card"><div><span class="eyebrow">DOMPET ZYPHRA</span><h1><%= formatRupiah(user.walletBalance) %></h1><p>Saldo dapat digunakan otomatis saat checkout.</p></div><div class="wallet-icon">Z</div></div><div class="section-heading subheading"><div><h2>Riwayat Transaksi</h2></div></div>
-<% if (transactions.length) { %><div class="table-card glass-card"><div class="responsive-table"><table><thead><tr><th>Tanggal</th><th>Keterangan</th><th>Referensi</th><th>Nominal</th><th>Saldo</th></tr></thead><tbody><% transactions.forEach((tx) => { %><tr><td><%= formatDate(tx.createdAt) %></td><td><%= tx.note || tx.source %></td><td><%= tx.reference || '-' %></td><td class="<%= tx.type === 'credit' ? 'amount-credit' : 'amount-debit' %>"><%= tx.type === 'credit' ? '+' : '-' %><%= formatRupiah(tx.amount) %></td><td><%= formatRupiah(tx.balanceAfter) %></td></tr><% }) %></tbody></table></div></div><% } else { %><div class="empty-state glass-card"><p>Belum ada transaksi dompet.</p></div><% } %></div></section>
+<section class="section page-section wallet-page">
+  <div class="container">
+    <div class="section-heading wallet-page-heading">
+      <div>
+        <span class="eyebrow">DOMPET ZYPHRA</span>
+        <h1>Dompet Saya</h1>
+        <p>Top up saldo, bayar pesanan lebih cepat, dan pantau seluruh mutasi dompet.</p>
+      </div>
+      <a class="btn btn-primary btn-icon-label" href="#topup">
+        <svg class="svg-icon" aria-hidden="true"><use href="#icon-plus"></use></svg>
+        <span>Top Up Saldo</span>
+      </a>
+    </div>
+
+    <div class="wallet-market-grid">
+      <article class="wallet-balance-card">
+        <div class="wallet-card-top">
+          <span class="wallet-card-logo"><svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg></span>
+          <span>Saldo aktif</span>
+        </div>
+        <strong><%= formatRupiah(user.walletBalance) %></strong>
+        <p>Saldo tersedia untuk pembayaran produk di TokoZyphra.</p>
+        <div class="wallet-card-actions">
+          <a href="#topup"><svg class="svg-icon" aria-hidden="true"><use href="#icon-plus"></use></svg>Top Up</a>
+          <a href="#history"><svg class="svg-icon" aria-hidden="true"><use href="#icon-history"></use></svg>Riwayat</a>
+        </div>
+      </article>
+
+      <div class="wallet-summary-grid">
+        <article class="wallet-summary-card glass-card">
+          <span class="market-icon market-icon-green"><svg class="svg-icon" aria-hidden="true"><use href="#icon-trending-up"></use></svg></span>
+          <div><small>Total Top Up</small><strong><%= formatRupiah(walletSummary.totalTopup) %></strong></div>
+        </article>
+        <article class="wallet-summary-card glass-card">
+          <span class="market-icon market-icon-orange"><svg class="svg-icon" aria-hidden="true"><use href="#icon-receipt"></use></svg></span>
+          <div><small>Total Penggunaan</small><strong><%= formatRupiah(walletSummary.totalDebit) %></strong></div>
+        </article>
+        <article class="wallet-summary-card glass-card">
+          <span class="market-icon market-icon-purple"><svg class="svg-icon" aria-hidden="true"><use href="#icon-gift"></use></svg></span>
+          <div><small>Total Saldo Masuk</small><strong><%= formatRupiah(walletSummary.totalCredit) %></strong></div>
+        </article>
+      </div>
+    </div>
+
+    <div class="wallet-content-grid">
+      <section class="topup-card glass-card" id="topup">
+        <div class="card-heading compact-card-heading">
+          <div>
+            <span class="eyebrow">ISI SALDO</span>
+            <h2>Top Up Dompet</h2>
+            <p>Saldo masuk setelah pembayaran berhasil diverifikasi.</p>
+          </div>
+          <span class="market-icon market-icon-purple"><svg class="svg-icon" aria-hidden="true"><use href="#icon-credit-card"></use></svg></span>
+        </div>
+
+        <form method="post" action="/account/wallet/topup" class="form-stack topup-form" data-topup-form>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <label>
+            Nominal top up
+            <div class="money-input-wrap">
+              <span>Rp</span>
+              <input type="number" name="amount" min="10000" max="10000000" step="1000" placeholder="50.000" required data-topup-amount>
+            </div>
+            <small>Minimal Rp10.000 dan maksimal Rp10.000.000.</small>
+          </label>
+
+          <div class="topup-presets" aria-label="Pilihan nominal top up">
+            <% topupPresets.forEach((amount) => { %>
+              <button type="button" data-topup-preset="<%= amount %>"><%= formatRupiah(amount).replace(',00', '') %></button>
+            <% }) %>
+          </div>
+
+          <label>
+            Metode pembayaran
+            <select name="paymentMethod" required>
+              <option value="qris">QRIS</option>
+              <option value="bri_va">BRI Virtual Account</option>
+              <option value="bni_va">BNI Virtual Account</option>
+              <option value="permata_va">Permata Virtual Account</option>
+              <option value="cimb_niaga_va">CIMB Niaga Virtual Account</option>
+            </select>
+          </label>
+
+          <div class="secure-payment-note">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-shield-check"></use></svg>
+            <span>Pembayaran diproses melalui Pakasir dan saldo hanya ditambahkan setelah status transaksi valid.</span>
+          </div>
+
+          <button class="btn btn-primary btn-block btn-icon-label" type="submit">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+            <span>Lanjut ke Pembayaran</span>
+          </button>
+        </form>
+      </section>
+
+      <section class="topup-list-card glass-card">
+        <div class="card-heading compact-card-heading">
+          <div>
+            <span class="eyebrow">STATUS TOP UP</span>
+            <h2>Top Up Terbaru</h2>
+            <p>Pantau pembayaran yang masih menunggu atau sudah berhasil.</p>
+          </div>
+          <span class="market-icon market-icon-blue"><svg class="svg-icon" aria-hidden="true"><use href="#icon-clock"></use></svg></span>
+        </div>
+
+        <% if (topups.length) { %>
+          <div class="topup-list">
+            <% topups.slice(0, 8).forEach((topup) => { %>
+              <article class="topup-list-item">
+                <span class="topup-list-icon <%= topup.status === 'completed' ? 'success' : '' %>">
+                  <svg class="svg-icon" aria-hidden="true"><use href="#<%= topup.status === 'completed' ? 'icon-check-circle' : 'icon-clock' %>"></use></svg>
+                </span>
+                <div>
+                  <strong><%= formatRupiah(topup.amount) %></strong>
+                  <small><%= topup.topupNumber %> • <%= formatDate(topup.createdAt) %></small>
+                </div>
+                <div class="topup-list-action">
+                  <span class="status-pill status-<%= topup.status %>"><%= topup.status.replace('_', ' ') %></span>
+                  <% if (!topup.credited && ['pending', 'expired'].includes(topup.status)) { %>
+                    <a href="/account/wallet/topup/<%= topup.topupNumber %>">Lanjutkan</a>
+                  <% } %>
+                </div>
+              </article>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="mini-empty-state">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg>
+            <p>Belum ada permintaan top up.</p>
+          </div>
+        <% } %>
+      </section>
+    </div>
+
+    <section class="wallet-history-section" id="history">
+      <div class="section-heading subheading wallet-history-heading">
+        <div>
+          <span class="eyebrow">MUTASI DOMPET</span>
+          <h2>Riwayat Saldo</h2>
+        </div>
+        <div class="wallet-history-tabs" role="tablist" aria-label="Filter riwayat dompet">
+          <button class="active" type="button" data-wallet-filter="all">Semua</button>
+          <button type="button" data-wallet-filter="topup">Top Up</button>
+          <button type="button" data-wallet-filter="usage">Penggunaan</button>
+        </div>
+      </div>
+
+      <% if (transactions.length) { %>
+        <div class="wallet-history-list glass-card" data-wallet-history>
+          <% transactions.forEach((tx) => { %>
+            <article class="wallet-history-item" data-wallet-kind="<%= tx.historyKind %>">
+              <span class="wallet-history-icon <%= tx.type === 'credit' ? 'credit' : 'debit' %>">
+                <svg class="svg-icon" aria-hidden="true"><use href="#<%= tx.source === 'topup' ? 'icon-plus' : tx.type === 'credit' ? 'icon-trending-up' : 'icon-receipt' %>"></use></svg>
+              </span>
+              <div class="wallet-history-copy">
+                <strong>
+                  <% if (tx.source === 'topup') { %>Top Up Saldo
+                  <% } else if (tx.source === 'order') { %>Pembayaran Pesanan
+                  <% } else if (tx.source === 'refund') { %>Pengembalian Dana
+                  <% } else if (tx.source === 'admin') { %>Penyesuaian Admin
+                  <% } else { %><%= tx.note || 'Transaksi Dompet' %><% } %>
+                </strong>
+                <span><%= tx.note || tx.source %></span>
+                <small><%= formatDate(tx.createdAt) %> • <%= tx.reference || 'Tanpa referensi' %></small>
+              </div>
+              <div class="wallet-history-amount">
+                <strong class="<%= tx.type === 'credit' ? 'amount-credit' : 'amount-debit' %>"><%= tx.type === 'credit' ? '+' : '-' %><%= formatRupiah(tx.amount) %></strong>
+                <small>Saldo <%= formatRupiah(tx.balanceAfter) %></small>
+              </div>
+            </article>
+          <% }) %>
+          <div class="wallet-filter-empty" data-wallet-filter-empty hidden>Tidak ada riwayat pada kategori ini.</div>
+        </div>
+      <% } else { %>
+        <div class="empty-state glass-card">
+          <svg class="empty-state-icon svg-icon" aria-hidden="true"><use href="#icon-history"></use></svg>
+          <h3>Belum ada transaksi dompet</h3>
+          <p>Riwayat top up, pembayaran, dan pengembalian dana akan muncul di sini.</p>
+        </div>
+      <% } %>
+    </section>
+  </div>
+</section>
 <%- include('../partials/footer') %>
