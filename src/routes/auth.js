@@ -95,12 +95,12 @@ router.post('/verify-registration', requireGuest, authLimiter, asyncHandler(asyn
   }
 
   delete req.session.pendingRegistration;
-  req.session.user = { id: user.id, name: user.name, email: user.email, role: user.role };
+  req.session.user = { id: user.id, name: user.name, email: user.email, role: user.role, avatarData: user.avatarData || '' };
   req.session.regenerate((error) => {
     if (error) return res.status(500).render('error', {
       title: 'Gagal Membuat Sesi', status: 500, message: 'Registrasi berhasil, tetapi sesi login tidak dapat dibuat. Silakan masuk kembali.'
     });
-    req.session.user = { id: user.id, name: user.name, email: user.email, role: user.role };
+    req.session.user = { id: user.id, name: user.name, email: user.email, role: user.role, avatarData: user.avatarData || '' };
     req.flash('success', 'Registrasi berhasil. Selamat datang di TokoZyphra.');
     res.redirect('/account');
   });
@@ -141,7 +141,7 @@ router.post('/login', requireGuest, authLimiter, asyncHandler(async (req, res) =
     if (error) return res.status(500).render('error', {
       title: 'Gagal Membuat Sesi', status: 500, message: 'Sesi login tidak dapat dibuat. Silakan coba kembali.'
     });
-    req.session.user = { id: user.id, name: user.name, email: user.email, role: user.role };
+    req.session.user = { id: user.id, name: user.name, email: user.email, role: user.role, avatarData: user.avatarData || '' };
     const safeNext = nextUrl.startsWith('/') && !nextUrl.startsWith('//') ? nextUrl : '/account';
     res.redirect(safeNext);
   });

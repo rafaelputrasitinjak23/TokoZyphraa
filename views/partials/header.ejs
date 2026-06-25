@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="TokoZyphra - marketplace produk digital, promo, voucher, dan pembayaran praktis.">
-  <meta name="theme-color" content="#080b16">
+  <meta name="theme-color" content="#f7f8fc">
   <title><%= title ? `${title} | ${appName}` : appName %></title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,9 +24,10 @@
       <nav class="main-nav" data-nav>
         <a class="<%= currentPath === '/' ? 'active' : '' %>" href="/">Produk</a>
         <% if (currentUser?.role === 'user') { %>
-          <a href="/account">Dashboard</a>
-          <a href="/account/orders">Pesanan</a>
-          <a href="/account/wallet">Dompet</a>
+          <a class="<%= currentPath === '/account' ? 'active' : '' %>" href="/account">Dashboard</a>
+          <a class="<%= currentPath.startsWith('/account/orders') ? 'active' : '' %>" href="/account/orders">Pesanan</a>
+          <a class="<%= currentPath === '/account/wallet' ? 'active' : '' %>" href="/account/wallet">Dompet</a>
+          <a class="<%= currentPath === '/account/profile' ? 'active' : '' %>" href="/account/profile">Profil</a>
         <% } %>
         <% if (currentUser?.role === 'admin') { %>
           <a href="/admin">Admin</a>
@@ -41,7 +42,20 @@
           <a class="btn btn-ghost btn-sm" href="/auth/login">Masuk</a>
           <a class="btn btn-primary btn-sm" href="/auth/register">Daftar</a>
         <% } else { %>
-          <span class="user-chip"><%= currentUser.name %></span>
+          <% if (currentUser.role === 'user') { %>
+            <a class="user-chip" href="/account/profile" aria-label="Buka profil <%= currentUser.name %>">
+              <span class="user-chip-avatar">
+                <% if (currentUser.avatarData) { %>
+                  <img src="<%= currentUser.avatarData %>" alt="">
+                <% } else { %>
+                  <%= currentUser.name.slice(0, 1).toUpperCase() %>
+                <% } %>
+              </span>
+              <span class="user-chip-name"><%= currentUser.name %></span>
+            </a>
+          <% } else { %>
+            <span class="user-chip admin-chip"><span class="user-chip-name"><%= currentUser.name %></span></span>
+          <% } %>
           <form method="post" action="/auth/logout" class="inline-form">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <button class="btn btn-ghost btn-sm" type="submit">Keluar</button>

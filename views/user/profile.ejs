@@ -1,0 +1,122 @@
+<%- include('../partials/header') %>
+<section class="section page-section">
+  <div class="container">
+    <div class="section-heading account-heading">
+      <div>
+        <span class="eyebrow">PENGATURAN AKUN</span>
+        <h1>Profil Saya</h1>
+        <p>Perbarui identitas, foto profil, dan keamanan akun Anda.</p>
+      </div>
+      <a class="btn btn-ghost" href="/account">Kembali ke Dashboard</a>
+    </div>
+
+    <div class="profile-layout">
+      <aside class="profile-sidebar glass-card">
+        <div class="profile-avatar profile-avatar-large" data-avatar-preview>
+          <% if (user.avatarData) { %>
+            <img src="<%= user.avatarData %>" alt="Foto profil <%= user.name %>" data-avatar-image>
+            <span data-avatar-fallback hidden><%= user.name.slice(0, 1).toUpperCase() %></span>
+          <% } else { %>
+            <img src="" alt="Pratinjau foto profil" data-avatar-image hidden>
+            <span data-avatar-fallback><%= user.name.slice(0, 1).toUpperCase() %></span>
+          <% } %>
+        </div>
+        <h2><%= user.name %></h2>
+        <p><%= user.email %></p>
+        <span class="status-pill <%= user.emailVerifiedAt ? 'status-completed' : 'status-pending' %>">
+          <%= user.emailVerifiedAt ? 'email terverifikasi' : 'belum terverifikasi' %>
+        </span>
+        <% if (user.bio) { %><p class="profile-bio"><%= user.bio %></p><% } %>
+        <dl class="profile-meta">
+          <div><dt>Bergabung</dt><dd><%= formatDate(user.createdAt) %></dd></div>
+          <div><dt>Produk dibeli</dt><dd><%= purchaseStats.totalProducts %></dd></div>
+          <div><dt>Pesanan selesai</dt><dd><%= purchaseStats.completedOrders %></dd></div>
+          <div><dt>Total belanja</dt><dd><%= formatRupiah(purchaseStats.totalSpent) %></dd></div>
+        </dl>
+      </aside>
+
+      <div class="profile-content">
+        <article class="form-card glass-card">
+          <div class="card-heading">
+            <div>
+              <span class="eyebrow">DATA PRIBADI</span>
+              <h2>Edit Profil</h2>
+              <p>Email tidak dapat diubah karena sudah menjadi identitas akun terverifikasi.</p>
+            </div>
+          </div>
+
+          <form method="post" action="/account/profile" class="form-stack" data-profile-form>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="avatarData" value="" data-avatar-data>
+            <input type="hidden" name="removeAvatar" value="0" data-avatar-remove>
+
+            <div class="avatar-controls">
+              <div>
+                <strong>Foto profil</strong>
+                <small>JPG, PNG, atau WebP. Foto otomatis dipotong persegi dan dikompresi.</small>
+              </div>
+              <div class="action-row">
+                <label class="btn btn-ghost btn-sm file-button" for="avatarFile">Pilih Foto</label>
+                <input id="avatarFile" type="file" accept="image/jpeg,image/png,image/webp" data-avatar-input hidden>
+                <button class="btn btn-danger btn-sm" type="button" data-avatar-delete>Hapus Foto</button>
+              </div>
+              <p class="avatar-message" data-avatar-message aria-live="polite"></p>
+            </div>
+
+            <div class="form-grid">
+              <label>
+                Nama lengkap
+                <input type="text" name="name" minlength="2" maxlength="80" required value="<%= user.name %>" autocomplete="name">
+              </label>
+              <label>
+                Email
+                <input type="email" value="<%= user.email %>" readonly class="readonly-input">
+              </label>
+              <label class="full">
+                Nomor telepon
+                <input type="tel" name="phone" maxlength="24" value="<%= user.phone || '' %>" placeholder="Contoh: +62 812 3456 7890" autocomplete="tel">
+              </label>
+              <label class="full">
+                Bio singkat
+                <textarea name="bio" rows="4" maxlength="250" placeholder="Tuliskan sedikit informasi tentang diri Anda."><%= user.bio || '' %></textarea>
+                <small>Maksimal 250 karakter.</small>
+              </label>
+            </div>
+
+            <button class="btn btn-primary" type="submit">Simpan Perubahan</button>
+          </form>
+        </article>
+
+        <article class="form-card glass-card" id="password">
+          <div class="card-heading">
+            <div>
+              <span class="eyebrow">KEAMANAN</span>
+              <h2>Ganti Kata Sandi</h2>
+              <p>Gunakan minimal 8 karakter yang memuat huruf dan angka.</p>
+            </div>
+          </div>
+
+          <form method="post" action="/account/password" class="form-stack">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <label>
+              Kata sandi saat ini
+              <input type="password" name="currentPassword" required maxlength="72" autocomplete="current-password">
+            </label>
+            <div class="form-grid">
+              <label>
+                Kata sandi baru
+                <input type="password" name="newPassword" minlength="8" maxlength="72" required autocomplete="new-password">
+              </label>
+              <label>
+                Konfirmasi kata sandi baru
+                <input type="password" name="passwordConfirm" minlength="8" maxlength="72" required autocomplete="new-password">
+              </label>
+            </div>
+            <button class="btn btn-primary" type="submit">Perbarui Kata Sandi</button>
+          </form>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+<%- include('../partials/footer') %>
