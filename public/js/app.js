@@ -6,6 +6,25 @@
     navToggle.setAttribute('aria-expanded', String(open));
   });
 
+
+  document.querySelectorAll('[data-auto-submit]').forEach((field) => {
+    field.addEventListener('change', () => field.form?.requestSubmit());
+  });
+
+  document.querySelectorAll('form[data-confirm]').forEach((form) => {
+    form.addEventListener('submit', (event) => {
+      if (!window.confirm(form.dataset.confirm || 'Lanjutkan tindakan ini?')) event.preventDefault();
+    });
+  });
+
+  document.querySelectorAll('form[data-disable-on-submit]').forEach((form) => {
+    form.addEventListener('submit', () => {
+      form.querySelectorAll('button[type="submit"]').forEach((button) => {
+        button.disabled = true;
+      });
+    });
+  });
+
   document.querySelectorAll('[data-alert-close]').forEach((button) => {
     button.addEventListener('click', () => button.closest('.alert')?.remove());
   });

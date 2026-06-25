@@ -13,8 +13,8 @@
     <div class="profile-layout">
       <aside class="profile-sidebar glass-card">
         <div class="profile-avatar profile-avatar-large" data-avatar-preview>
-          <% if (user.avatarData) { %>
-            <img src="<%= user.avatarData %>" alt="Foto profil <%= user.name %>" data-avatar-image>
+          <% if (currentUser?.hasAvatar) { %>
+            <img src="/account/avatar" alt="Foto profil <%= user.name %>" data-avatar-image>
             <span data-avatar-fallback hidden><%= user.name.slice(0, 1).toUpperCase() %></span>
           <% } else { %>
             <img src="" alt="Pratinjau foto profil" data-avatar-image hidden>

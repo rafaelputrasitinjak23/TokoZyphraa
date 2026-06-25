@@ -1,0 +1,11 @@
+<% if (pagination && pagination.totalPages > 1) { const params = new URLSearchParams(Object.entries(pagination.query || {}).filter(([, value]) => value)); %>
+  <nav class="pagination" aria-label="Navigasi halaman">
+    <% if (pagination.page > 1) { params.set('page', pagination.page - 1); %>
+      <a class="btn btn-ghost btn-sm" href="?<%= params.toString() %>">Sebelumnya</a>
+    <% } %>
+    <span>Halaman <strong><%= pagination.page %></strong> dari <strong><%= pagination.totalPages %></strong></span>
+    <% if (pagination.page < pagination.totalPages) { params.set('page', pagination.page + 1); %>
+      <a class="btn btn-ghost btn-sm" href="?<%= params.toString() %>">Berikutnya</a>
+    <% } %>
+  </nav>
+<% } %>

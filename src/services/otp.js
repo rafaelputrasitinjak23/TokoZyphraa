@@ -3,7 +3,7 @@ const Otp = require('../models/Otp');
 const { sendRegistrationOtp } = require('./mailer');
 
 function hashOtp(code) {
-  return crypto.createHash('sha256').update(`${code}:${process.env.SESSION_SECRET || 'dev'}`).digest('hex');
+  return crypto.createHmac('sha256', process.env.SESSION_SECRET).update(String(code)).digest('hex');
 }
 
 async function issueRegistrationOtp({ email, name }) {
@@ -22,7 +22,8 @@ async function issueRegistrationOtp({ email, name }) {
   await Otp.findOneAndUpdate(
     { email, purpose: 'register' },
     {
-      codeHash: hashOtp(code), attempts: 0,
+      codeHash: hashOtp(code),
+      attempts: 0,
       expiresAt: new Date(Date.now() + ttlMinutes * 60 * 1000),
       lastSentAt: new Date()
     },
@@ -39,12 +40,16 @@ async function issueRegistrationOtp({ email, name }) {
 
 async function verifyRegistrationOtp(email, code) {
   const record = await Otp.findOne({ email, purpose: 'register' });
-  if (!record || record.expiresAt < new Date()) return { ok: false, reason: 'Kode OTP kedaluwarsa atau tidak ditemukan.' };
+  if (!record || record.expiresAt < new Date()) {
+    await Otp.deleteOne({ email, purpose: 'register' });
+    return { ok: false, reason: 'Kode OTP kedaluwarsa atau tidak ditemukan.' };
+  }
   if (record.attempts >= 5) return { ok: false, reason: 'Terlalu banyak percobaan OTP. Minta kode baru.' };
 
-  const supplied = hashOtp(String(code || '').trim());
-  const valid = supplied.length === record.codeHash.length &&
-    crypto.timingSafeEqual(Buffer.from(supplied), Buffer.from(record.codeHash));
+  const normalizedCode = String(code || '').trim();
+  if (!/^\d{6}$/.test(normalizedCode)) return { ok: false, reason: 'Kode OTP harus terdiri dari 6 angka.' };
+  const supplied = hashOtp(normalizedCode);
+  const valid = crypto.timingSafeEqual(Buffer.from(supplied, 'hex'), Buffer.from(record.codeHash, 'hex'));
 
   if (!valid) {
     record.attempts += 1;

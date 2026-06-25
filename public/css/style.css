@@ -825,3 +825,30 @@ th { color: #64748b; }
   .feature-mini-grid { grid-template-columns: repeat(2, 1fr); }
   .catalog-filter .search-input-wrap { grid-column: 1; }
 }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.pagination span {
+  color: var(--muted, #64748b);
+  font-size: .92rem;
+}
+
+.shipping-fields {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(148, 163, 184, .25);
+}
+
+.admin-shell .table-card .action-row input[name="notes"] {
+  min-width: 180px;
+  flex: 1 1 180px;
+}

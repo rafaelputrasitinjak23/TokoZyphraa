@@ -13,8 +13,8 @@
     <div class="account-overview">
       <article class="profile-compact glass-card">
         <div class="profile-avatar profile-avatar-medium">
-          <% if (user.avatarData) { %>
-            <img src="<%= user.avatarData %>" alt="Foto profil <%= user.name %>">
+          <% if (currentUser?.hasAvatar) { %>
+            <img src="/account/avatar" alt="Foto profil <%= user.name %>">
           <% } else { %>
             <span><%= user.name.slice(0, 1).toUpperCase() %></span>
           <% } %>

@@ -4,13 +4,19 @@ const validator = require('validator');
 const User = require('../models/User');
 const { createCaptcha, verifyCaptcha } = require('../utils/captcha');
 const { issueRegistrationOtp, verifyRegistrationOtp } = require('../services/otp');
-const { authLimiter, otpLimiter } = require('../middleware/rateLimits');
+const { authLimiter, otpLimiter, captchaLimiter } = require('../middleware/rateLimits');
 const { requireGuest } = require('../middleware/auth');
+const noStore = require('../middleware/noStore');
+const { regenerateSession, sessionUser } = require('../utils/session');
+const { safeLocalPath } = require('../utils/redirect');
 const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
+const REGISTRATION_SESSION_MS = 30 * 60 * 1000;
 
-router.get('/captcha/:context.svg', (req, res) => {
+router.use(noStore);
+
+router.get('/captcha/:context.svg', captchaLimiter, (req, res) => {
   const allowed = ['register', 'login', 'admin'];
   if (!allowed.includes(req.params.context)) return res.sendStatus(404);
   res.type('svg').set('Cache-Control', 'no-store, no-cache, must-revalidate').send(createCaptcha(req, req.params.context));
@@ -32,7 +38,7 @@ router.post('/register', requireGuest, otpLimiter, asyncHandler(async (req, res)
     req.flash('error', 'Nama harus terdiri dari 2–80 karakter.');
     return res.redirect('/auth/register');
   }
-  if (!validator.isEmail(email)) {
+  if (!validator.isEmail(email) || email.length > 254) {
     req.flash('error', 'Format email tidak valid.');
     return res.redirect('/auth/register');
   }
@@ -50,7 +56,8 @@ router.post('/register', requireGuest, otpLimiter, asyncHandler(async (req, res)
   }
 
   req.session.pendingRegistration = {
-    name, email,
+    name,
+    email,
     passwordHash: await bcrypt.hash(password, 12),
     createdAt: Date.now()
   };
@@ -60,13 +67,17 @@ router.post('/register', requireGuest, otpLimiter, asyncHandler(async (req, res)
 }));
 
 router.get('/verify-registration', requireGuest, (req, res) => {
-  if (!req.session.pendingRegistration) return res.redirect('/auth/register');
-  res.render('auth/verify', { title: 'Verifikasi OTP', email: req.session.pendingRegistration.email });
+  const pending = req.session.pendingRegistration;
+  if (!pending || Date.now() - pending.createdAt > REGISTRATION_SESSION_MS) {
+    delete req.session.pendingRegistration;
+    return res.redirect('/auth/register');
+  }
+  res.render('auth/verify', { title: 'Verifikasi OTP', email: pending.email });
 });
 
 router.post('/verify-registration', requireGuest, authLimiter, asyncHandler(async (req, res) => {
   const pending = req.session.pendingRegistration;
-  if (!pending || Date.now() - pending.createdAt > 30 * 60 * 1000) {
+  if (!pending || Date.now() - pending.createdAt > REGISTRATION_SESSION_MS) {
     delete req.session.pendingRegistration;
     req.flash('error', 'Sesi registrasi kedaluwarsa. Silakan mengulang registrasi.');
     return res.redirect('/auth/register');
@@ -94,42 +105,41 @@ router.post('/verify-registration', requireGuest, authLimiter, asyncHandler(asyn
     throw error;
   }
 
-  delete req.session.pendingRegistration;
-  req.session.user = { id: user.id, name: user.name, email: user.email, role: user.role, avatarData: user.avatarData || '' };
-  req.session.regenerate((error) => {
-    if (error) return res.status(500).render('error', {
-      title: 'Gagal Membuat Sesi', status: 500, message: 'Registrasi berhasil, tetapi sesi login tidak dapat dibuat. Silakan masuk kembali.'
-    });
-    req.session.user = { id: user.id, name: user.name, email: user.email, role: user.role, avatarData: user.avatarData || '' };
-    req.flash('success', 'Registrasi berhasil. Selamat datang di TokoZyphra.');
-    res.redirect('/account');
-  });
+  await regenerateSession(req);
+  req.session.user = sessionUser(user);
+  req.flash('success', 'Registrasi berhasil. Selamat datang di TokoZyphra.');
+  res.redirect('/account');
 }));
 
 router.post('/resend-registration-otp', requireGuest, otpLimiter, asyncHandler(async (req, res) => {
   const pending = req.session.pendingRegistration;
-  if (!pending) return res.redirect('/auth/register');
+  if (!pending || Date.now() - pending.createdAt > REGISTRATION_SESSION_MS) {
+    delete req.session.pendingRegistration;
+    req.flash('error', 'Sesi registrasi kedaluwarsa. Silakan mengulang registrasi.');
+    return res.redirect('/auth/register');
+  }
   await issueRegistrationOtp({ email: pending.email, name: pending.name });
   req.flash('success', 'Kode OTP baru telah dikirim.');
   res.redirect('/auth/verify-registration');
 }));
 
 router.get('/login', requireGuest, (req, res) => res.render('auth/login', {
-  title: 'Masuk', next: String(req.query.next || '')
+  title: 'Masuk',
+  next: safeLocalPath(req.query.next, '')
 }));
 
 router.post('/login', requireGuest, authLimiter, asyncHandler(async (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase();
   const password = String(req.body.password || '');
-  const nextUrl = String(req.body.next || '');
+  const nextUrl = safeLocalPath(req.body.next, '/account');
 
   if (!verifyCaptcha(req, 'login', req.body.captcha)) {
     req.flash('error', 'CAPTCHA tidak sesuai atau sudah kedaluwarsa.');
     return res.redirect('/auth/login');
   }
 
-  const user = validator.isEmail(email) ? await User.findOne({ email }) : null;
-  const valid = user && user.role === 'user' && user.isActive && await bcrypt.compare(password, user.passwordHash);
+  const user = validator.isEmail(email) ? await User.findOne({ email, role: 'user', isActive: true }) : null;
+  const valid = user && await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
     req.flash('error', 'Email atau kata sandi tidak sesuai.');
     return res.redirect('/auth/login');
@@ -137,21 +147,16 @@ router.post('/login', requireGuest, authLimiter, asyncHandler(async (req, res) =
 
   user.lastLoginAt = new Date();
   await user.save();
-  req.session.regenerate((error) => {
-    if (error) return res.status(500).render('error', {
-      title: 'Gagal Membuat Sesi', status: 500, message: 'Sesi login tidak dapat dibuat. Silakan coba kembali.'
-    });
-    req.session.user = { id: user.id, name: user.name, email: user.email, role: user.role, avatarData: user.avatarData || '' };
-    const safeNext = nextUrl.startsWith('/') && !nextUrl.startsWith('//') ? nextUrl : '/account';
-    res.redirect(safeNext);
-  });
+  await regenerateSession(req);
+  req.session.user = sessionUser(user);
+  res.redirect(nextUrl);
 }));
 
-router.post('/logout', (req, res) => {
-  req.session.destroy(() => {
-    res.clearCookie('tz.sid');
-    res.redirect('/');
-  });
-});
+router.post('/logout', asyncHandler(async (req, res) => {
+  await new Promise((resolve) => req.session.destroy(() => resolve()));
+  res.clearCookie('tz.sid', { path: '/' });
+  res.clearCookie('tz.csrf', { path: '/' });
+  res.redirect('/');
+}));
 
 module.exports = router;

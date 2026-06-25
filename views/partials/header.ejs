@@ -56,6 +56,10 @@
             <svg class="svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg>
             <span>Kelola Produk</span>
           </a>
+          <a class="<%= currentPath.startsWith('/admin/topups') ? 'active' : '' %>" href="/admin/topups">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg>
+            <span>Top Up</span>
+          </a>
         <% } %>
       </nav>
       <div class="nav-actions">
@@ -73,8 +77,8 @@
           <% if (currentUser.role === 'user') { %>
             <a class="user-chip" href="/account/profile" aria-label="Buka profil <%= currentUser.name %>">
               <span class="user-chip-avatar">
-                <% if (currentUser.avatarData) { %>
-                  <img src="<%= currentUser.avatarData %>" alt="">
+                <% if (currentUser.hasAvatar) { %>
+                  <img src="/account/avatar" alt="">
                 <% } else { %>
                   <%= currentUser.name.slice(0, 1).toUpperCase() %>
                 <% } %>

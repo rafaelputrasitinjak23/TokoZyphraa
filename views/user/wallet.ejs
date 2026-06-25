@@ -56,6 +56,7 @@
 
         <form method="post" action="/account/wallet/topup" class="form-stack topup-form" data-topup-form>
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="topupToken" value="<%= topupToken %>">
           <label>
             Nominal top up
             <div class="money-input-wrap">

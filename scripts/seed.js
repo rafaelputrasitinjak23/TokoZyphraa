@@ -1,33 +1,52 @@
 require('dotenv').config();
-const dns = require('dns')
-
-dns.setServers([
-  '1.1.1.1',
-  '8.8.8.8'
-])
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
+const validator = require('validator');
+const { validateEnvironment } = require('../src/config/env');
 const connectDatabase = require('../src/config/database');
 const User = require('../src/models/User');
 const Product = require('../src/models/Product');
 const Voucher = require('../src/models/Voucher');
 
+function validateAdminCredentials() {
+  const email = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+  const password = String(process.env.ADMIN_PASSWORD || '');
+  if (!validator.isEmail(email)) throw new Error('ADMIN_EMAIL wajib berupa email yang valid.');
+  if (password.length < 12 || password.length > 72 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+    throw new Error('ADMIN_PASSWORD wajib 12–72 karakter dan memuat huruf serta angka.');
+  }
+  return { email, password };
+}
+
 async function seed() {
+  validateEnvironment();
+  const { email: adminEmail, password: adminPassword } = validateAdminCredentials();
   await connectDatabase();
 
-  const adminEmail = String(process.env.ADMIN_EMAIL || 'admin@tokozypra.local').toLowerCase();
-  const adminPassword = process.env.ADMIN_PASSWORD || 'GantiPasswordAdmin123!';
-  await User.findOneAndUpdate(
-    { email: adminEmail },
-    {
+  const existingAdmin = await User.findOne({ email: adminEmail });
+  if (!existingAdmin) {
+    await User.create({
       name: process.env.ADMIN_NAME || 'Administrator',
       email: adminEmail,
       passwordHash: await bcrypt.hash(adminPassword, 12),
       role: 'admin',
       emailVerifiedAt: new Date(),
       isActive: true
-    },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
-  );
+    });
+  } else {
+    if (existingAdmin.role !== 'admin') {
+      throw new Error('ADMIN_EMAIL sudah digunakan oleh akun pengguna. Seed tidak akan mempromosikan akun pengguna secara otomatis.');
+    }
+    existingAdmin.name = process.env.ADMIN_NAME || existingAdmin.name || 'Administrator';
+    existingAdmin.isActive = true;
+    existingAdmin.emailVerifiedAt ||= new Date();
+    if (process.env.RESET_ADMIN_PASSWORD === 'true') {
+      existingAdmin.passwordHash = await bcrypt.hash(adminPassword, 12);
+      existingAdmin.passwordChangedAt = new Date();
+      existingAdmin.sessionVersion += 1;
+    }
+    await existingAdmin.save();
+  }
 
   const now = Date.now();
   const products = [
@@ -67,27 +86,33 @@ async function seed() {
   ];
 
   for (const product of products) {
-    await Product.findOneAndUpdate({ slug: product.slug }, product, { upsert: true, new: true, setDefaultsOnInsert: true });
+    await Product.findOneAndUpdate({ slug: product.slug }, product, { upsert: true, new: true, setDefaultsOnInsert: true, runValidators: true });
   }
 
   await Voucher.findOneAndUpdate(
     { code: 'ZYPHRA10' },
     {
-      code: 'ZYPHRA10', description: 'Diskon 10% untuk pengguna TokoZyphra',
-      type: 'percent', value: 10, minPurchase: 25000, maxDiscount: 50000,
-      usageLimit: 1000, perUserLimit: 1, startsAt: new Date(now - 86400000),
-      expiresAt: new Date(now + 365 * 86400000), isActive: true
+      $setOnInsert: { usedCount: 0 },
+      $set: {
+        description: 'Diskon 10% untuk pengguna TokoZyphra',
+        type: 'percent', value: 10, minPurchase: 25000, maxDiscount: 50000,
+        usageLimit: 1000, perUserLimit: 1, startsAt: new Date(now - 86400000),
+        expiresAt: new Date(now + 365 * 86400000), isActive: true
+      }
     },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
+    { upsert: true, new: true, setDefaultsOnInsert: true, runValidators: true }
   );
 
   console.log('Seed selesai.');
   console.log(`Admin: ${adminEmail}`);
-  console.log('Segera ganti ADMIN_PASSWORD sebelum menjalankan seed di produksi.');
-  process.exit(0);
+  if (existingAdmin && process.env.RESET_ADMIN_PASSWORD !== 'true') {
+    console.log('Password admin yang sudah ada tidak diubah. Set RESET_ADMIN_PASSWORD=true untuk meresetnya.');
+  }
+  await mongoose.disconnect();
 }
 
-seed().catch((error) => {
+seed().catch(async (error) => {
   console.error(error);
+  await mongoose.disconnect().catch(() => {});
   process.exit(1);
 });

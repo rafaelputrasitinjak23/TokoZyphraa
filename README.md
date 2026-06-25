@@ -1,126 +1,188 @@
 # TokoZyphra
 
-Website ecommerce responsif berbasis **Express.js, EJS, dan MongoDB** dengan registrasi OTP email, CAPTCHA, panel admin, flash sale, diskon, voucher, dompet pengguna, ulasan terverifikasi, produk gratis, dan pembayaran Pakasir.
+TokoZyphra adalah aplikasi e-commerce responsif berbasis Express.js, EJS, dan MongoDB. Proyek ini menyediakan registrasi OTP email, CAPTCHA, katalog dan keranjang, checkout, voucher, dompet pengguna, produk digital maupun fisik, ulasan terverifikasi, panel administrator, serta pembayaran Pakasir.
 
-## Fitur
+## Fitur Utama
 
 - Registrasi pengguna dengan email, kata sandi, CAPTCHA, dan OTP melalui Nodemailer.
-- OTP hanya dipakai pada registrasi; login menggunakan email, kata sandi, dan CAPTCHA.
-- Login administrator terpisah dengan CAPTCHA.
-- Katalog, pencarian, kategori, detail produk, keranjang, dan checkout.
-- Harga diskon dan flash sale berdasarkan periode aktif.
-- Voucher persentase atau nominal, minimal transaksi, batas diskon, kuota, dan batas per pengguna.
-- Dompet pengguna dan riwayat transaksi saldo; pembatalan pesanan mengembalikan saldo serta kuota voucher secara idempoten.
-- Produk gratis tanpa membuka transaksi payment gateway.
-- Integrasi Pakasir via API untuk QRIS dan Virtual Account.
-- Webhook Pakasir yang memverifikasi ulang transaksi melalui Transaction Detail API.
-- Ulasan hanya dari pengguna yang memiliki pesanan selesai.
-- Panel admin untuk produk, voucher, pesanan, pengguna/dompet, dan moderasi ulasan.
-- UI dark-premium yang responsif untuk desktop, tablet, dan mobile.
-- CSRF, rate limiting, Helmet, password hashing, secure cookie, dan session store MongoDB.
-- Pencegah klik kanan dan shortcut DevTools di browser sebagai deterrent ringan.
-- Siap diekspor sebagai satu Express Function di Vercel.
+- Login pengguna dan administrator terpisah dengan CAPTCHA.
+- Katalog, pencarian, kategori, flash sale, keranjang, dan checkout.
+- Produk digital, produk gratis, dan produk fisik dengan alamat pengiriman.
+- Voucher persentase atau nominal dengan periode aktif, minimal transaksi, kuota global, dan batas per pengguna.
+- Dompet pengguna, top-up Pakasir, riwayat saldo, penggunaan saldo saat checkout, dan refund pembatalan.
+- Pembayaran QRIS atau Virtual Account melalui Pakasir.
+- Webhook yang selalu memverifikasi ulang transaksi melalui Transaction Detail API.
+- Rekonsiliasi pembayaran dan kedaluwarsa pesanan/top-up secara terjadwal.
+- Ulasan hanya dari pengguna dengan pembelian yang telah selesai.
+- Panel admin untuk produk, voucher, pesanan, pengguna, penyesuaian saldo, dan moderasi ulasan.
+- Audit log tindakan administrator.
+- Pagination pada katalog dan daftar data utama.
+- Session MongoDB, CSRF signed-cookie, Helmet/CSP, rate limiting MongoDB, password hashing, session versioning, dan cookie aman.
+- Operasi saldo, voucher, order, stok, refund, dan top-up menggunakan MongoDB transaction serta idempotency key.
 
 ## Persyaratan
 
 - Node.js 20 atau lebih baru.
-- MongoDB Atlas atau MongoDB replica set yang dapat diakses aplikasi.
-- Akun SMTP untuk Nodemailer.
-- Proyek Pakasir untuk pembayaran produksi.
+- MongoDB replica set, MongoDB Atlas, atau mongos.
+- Akun SMTP untuk pengiriman OTP pada production.
+- Proyek Pakasir untuk transaksi pembayaran production.
 
-## Instalasi Lokal
+MongoDB standalone tidak aman untuk operasi finansial proyek ini. Checkout, refund, fulfillment, voucher, dan top-up membutuhkan transaction. Untuk pengembangan lokal, jalankan MongoDB sebagai single-node replica set atau gunakan MongoDB Atlas.
+
+## Instalasi
 
 ```bash
-npm install
+npm ci
 cp .env.example .env
 ```
 
-Isi `.env`, kemudian:
+Isi `.env`, lalu jalankan:
 
 ```bash
 npm run seed
 npm run dev
 ```
 
-Buka `http://localhost:3000`.
+Aplikasi tersedia di `http://localhost:3000` secara default.
 
-Pada mode development, apabila SMTP belum diisi, kode OTP dicetak ke terminal. Pada mode production, konfigurasi SMTP wajib tersedia.
+Pada development, OTP dicetak ke terminal apabila SMTP belum dikonfigurasi. SMTP wajib tersedia pada production.
 
-## Variabel Environment
+## Konfigurasi Environment
 
-Lihat `.env.example`. Variabel yang paling penting:
+Gunakan `.env.example` sebagai acuan. Konfigurasi utama:
 
-- `MONGODB_URI`
-- `SESSION_SECRET`
-- `APP_URL`
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`
-- `PAKASIR_PROJECT_SLUG`, `PAKASIR_API_KEY`, `PAKASIR_DEFAULT_METHOD`
-- `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`
+- `MONGODB_URI`: koneksi MongoDB replica set atau Atlas.
+- `SESSION_SECRET`: secret acak minimal 32 karakter.
+- `SESSION_TTL_SECONDS`: masa aktif session dalam detik.
+- `TRUST_PROXY_HOPS`: jumlah reverse proxy tepercaya; gunakan `0` untuk akses langsung lokal.
+- `REQUIRE_MONGODB_TRANSACTIONS`: pemeriksaan dukungan transaction saat startup.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, dan `MAIL_FROM`.
+- `PAKASIR_PROJECT_SLUG`, `PAKASIR_API_KEY`, dan `PAKASIR_DEFAULT_METHOD`.
+- `ADMIN_EMAIL`, `ADMIN_PASSWORD`, dan `ADMIN_NAME`.
+- `JOB_SECRET` atau `CRON_SECRET`: secret minimal 32 karakter untuk endpoint rekonsiliasi.
+- `ENABLE_INTERNAL_JOBS`: menjalankan scheduler di dalam proses Node.js.
+- `INTERNAL_JOB_INTERVAL_MINUTES`: interval scheduler internal.
 
-Gunakan secret acak minimal 32 karakter untuk `SESSION_SECRET`. Jangan commit `.env`.
+Jangan commit `.env` ke repository.
+
+## Menjalankan MongoDB Replica Set Lokal
+
+Contoh konfigurasi single-node replica set:
+
+```bash
+mongod --dbpath ./data --replSet rs0
+```
+
+Setelah MongoDB aktif, inisialisasi satu kali melalui `mongosh`:
+
+```javascript
+rs.initiate()
+```
+
+Gunakan URI seperti berikut:
+
+```env
+MONGODB_URI=mongodb://127.0.0.1:27017/tokozyphra?replicaSet=rs0
+```
+
+## Seed Administrator
+
+`npm run seed` memerlukan `ADMIN_EMAIL` dan `ADMIN_PASSWORD`. Password harus berjumlah 12–72 karakter serta memuat huruf dan angka. Tidak ada password admin default.
+
+Seed tidak mengubah password admin yang sudah ada dan tidak akan mempromosikan akun pengguna biasa yang kebetulan memakai `ADMIN_EMAIL`. Untuk mereset password admin secara eksplisit:
+
+```env
+RESET_ADMIN_PASSWORD=true
+```
+
+Setelah reset selesai, hapus atau ubah kembali nilai tersebut menjadi `false`.
 
 ## Konfigurasi Pakasir
 
 1. Buat proyek di dashboard Pakasir.
-2. Salin **slug proyek** dan **API key** ke environment.
-3. Isi webhook proyek Pakasir dengan:
+2. Masukkan slug proyek dan API key ke environment.
+3. Atur webhook ke:
 
 ```text
-https://domain-anda.vercel.app/webhooks/pakasir
+https://domain-anda.example/webhooks/pakasir
 ```
 
-4. Gunakan mode sandbox untuk menguji alur pembayaran dan webhook.
-5. Sistem tidak langsung mempercayai body webhook. Endpoint akan memanggil Transaction Detail API dan mencocokkan `project`, `order_id`, `amount`, dan `status`.
+4. Uji seluruh status pembayaran pada lingkungan sandbox sebelum production.
 
-## Deployment ke Vercel
+Body webhook tidak langsung dipercaya. Server mencari order/top-up lokal, memanggil Transaction Detail API, lalu mencocokkan project, nomor referensi, nominal, dan status transaksi sebelum fulfillment atau kredit saldo dilakukan.
 
-1. Push folder ini ke repository Git.
-2. Import repository ke Vercel.
-3. Tambahkan seluruh environment variable pada Project Settings → Environment Variables.
-4. Deploy.
-5. Jalankan seed satu kali dari mesin lokal yang memakai `MONGODB_URI` produksi, atau gunakan shell aman:
+## Rekonsiliasi Pembayaran
+
+Jalankan rekonsiliasi manual dengan:
 
 ```bash
-npm run seed
+npm run reconcile-payments
 ```
 
-Express diekspor melalui `module.exports = app` pada `index.js`. Vercel mendeteksinya sebagai satu Express Function.
+Untuk server Node.js yang berjalan terus-menerus, scheduler internal dapat diaktifkan:
 
-### MongoDB Atlas dan Vercel
+```env
+ENABLE_INTERNAL_JOBS=true
+INTERNAL_JOB_INTERVAL_MINUTES=5
+```
 
-Aplikasi memakai cache koneksi global agar koneksi Mongoose dapat digunakan kembali antar-invocation. Untuk deployment serverless tanpa private networking, Atlas mungkin memerlukan IP access `0.0.0.0/0`. Pilihan ini membuka akses jaringan secara luas; gunakan kredensial database yang kuat dan hak akses minimum. Private networking lebih aman bila tersedia.
+Untuk serverless, gunakan scheduler eksternal yang memanggil endpoint berikut dengan metode GET atau POST:
+
+```text
+/internal/jobs/reconcile-payments
+```
+
+Kirim header:
+
+```text
+Authorization: Bearer <JOB_SECRET-atau-CRON_SECRET>
+```
+
+Jangan mengaktifkan scheduler internal pada banyak instance sekaligus. Operasi rekonsiliasi bersifat idempoten, tetapi satu scheduler terpusat tetap lebih efisien.
+
+## Endpoint Kesehatan
+
+- `/health` atau `/health/live`: memeriksa proses aplikasi tanpa menunggu database.
+- `/health/ready`: memastikan koneksi database tersedia.
+
+## Deployment
+
+1. Simpan proyek pada repository privat atau terkontrol.
+2. Jalankan `npm ci` pada proses build/deploy.
+3. Tambahkan seluruh environment production.
+4. Pastikan MongoDB mendukung transaction.
+5. Jalankan seed administrator satu kali dari lingkungan aman.
+6. Konfigurasikan webhook Pakasir.
+7. Konfigurasikan scheduler rekonsiliasi eksternal untuk deployment serverless.
+8. Jalankan health check dan pengujian sandbox sebelum menerima transaksi nyata.
+
+Aplikasi mengekspor instance Express melalui `module.exports = app` pada `index.js`, sehingga dapat digunakan oleh platform Node.js maupun adapter serverless yang mendukung Express.
 
 ## Penyimpanan Gambar
 
-Panel admin menyimpan **URL gambar**, bukan upload file lokal. Filesystem Vercel bersifat sementara, sehingga gunakan layanan object storage/CDN seperti Cloudinary, S3, atau Vercel Blob dan masukkan URL hasil upload.
+Panel admin menggunakan URL gambar produk. Gunakan object storage atau CDN untuk gambar produk pada production.
 
-## Catatan Keamanan Anti-DevTools
-
-`public/js/protect.js` memblokir klik kanan dan beberapa shortcut umum. Perlindungan ini tidak dapat mencegah pengguna teknis membuka DevTools, melihat request, atau mengambil asset yang sudah dikirim ke browser. Jangan menyimpan API key, logika pembayaran, harga final, OTP, atau rahasia bisnis di JavaScript frontend. Semua keputusan sensitif pada proyek ini dilakukan di server.
-
-Untuk menonaktifkan deterrent tersebut:
-
-```env
-ENABLE_CLIENT_PROTECTION=false
-```
+Foto profil pengguna saat ini disimpan sebagai data gambar terkompresi di MongoDB dengan batas 400 KB. Session hanya menyimpan penanda keberadaan avatar, bukan isi gambarnya. Untuk skala besar, pindahkan avatar ke object storage.
 
 ## Pemeriksaan Proyek
 
 ```bash
 npm run check
+npm audit --omit=dev
 ```
 
-Perintah tersebut memeriksa sintaks seluruh JavaScript dan mengompilasi seluruh template EJS.
+`npm run check` memeriksa sintaks seluruh file JavaScript dan mengompilasi seluruh template EJS.
 
-## Akun Admin
+## Catatan Client Protection
 
-Akun admin dibuat oleh `npm run seed` menggunakan nilai `ADMIN_EMAIL` dan `ADMIN_PASSWORD`. Ganti password default sebelum seed dan jangan menggunakan kredensial contoh di produksi.
+`public/js/protect.js` hanya menjadi deterrent ringan untuk klik kanan dan shortcut tertentu. Mekanisme tersebut bukan kontrol keamanan dan dapat dinonaktifkan:
 
-## Batasan yang Perlu Dikembangkan untuk Skala Besar
+```env
+ENABLE_CLIENT_PROTECTION=false
+```
 
-- Tambahkan layanan upload object storage langsung dari panel admin.
-- Tambahkan email transaksi dan notifikasi fulfillment.
-- Gunakan transaksi MongoDB untuk reservasi stok dengan volume tinggi.
-- Tambahkan refund otomatis dan rekonsiliasi terjadwal.
-- Tambahkan audit log administrator dan 2FA admin.
-- Tambahkan kebijakan privasi, syarat layanan, dan proses penghapusan akun sesuai kebutuhan bisnis.
+Seluruh keputusan sensitif tetap dilakukan di server. Jangan menaruh API key, OTP, harga final, atau rahasia bisnis di JavaScript frontend.
+
+## Pengembangan Lanjutan
+
+Untuk skala produksi yang lebih besar, gunakan object storage untuk avatar, layanan antrean untuk email dan job, observability terpusat, backup database teruji, 2FA administrator, refund gateway otomatis, serta pengujian integrasi terhadap sandbox Pakasir dan MongoDB replica set.

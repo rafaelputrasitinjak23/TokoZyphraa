@@ -1,0 +1,50 @@
+<%- include('../partials/header') %>
+<section class="section page-section">
+  <div class="container">
+    <div class="admin-heading">
+      <div><span class="eyebrow">ADMIN / TOP UP</span><h1>Kelola Top Up Dompet</h1></div>
+      <form method="get" action="/admin/topups" class="filter-inline">
+        <select name="status" data-auto-submit>
+          <option value="">Semua status</option>
+          <% ['pending','processing','completed','cancelled','expired','manual_review'].forEach((status) => { %>
+            <option value="<%= status %>" <%= selectedStatus === status ? 'selected' : '' %>><%= status.replace('_', ' ') %></option>
+          <% }) %>
+        </select>
+      </form>
+    </div>
+    <div class="table-card glass-card">
+      <div class="responsive-table">
+        <table>
+          <thead><tr><th>Referensi</th><th>Pengguna</th><th>Nominal</th><th>Pembayaran</th><th>Status</th><th>Tindakan</th></tr></thead>
+          <tbody>
+            <% topups.forEach((topup) => { %>
+              <tr>
+                <td><strong><%= topup.topupNumber %></strong><small class="table-sub"><%= formatDate(topup.createdAt) %></small></td>
+                <td><%= topup.user?.name || '-' %><small class="table-sub"><%= topup.user?.email || '' %></small></td>
+                <td><%= formatRupiah(topup.amount) %><small class="table-sub">Total: <%= formatRupiah(topup.totalPayment || topup.amount) %></small></td>
+                <td><%= topup.paymentMethod || '-' %><small class="table-sub"><%= topup.paymentNumber || 'Belum tersedia' %></small></td>
+                <td><span class="status-pill status-<%= topup.status %>"><%= topup.status.replace('_', ' ') %></span><% if (topup.notes) { %><small class="table-sub"><%= topup.notes %></small><% } %></td>
+                <td>
+                  <% if (topup.status === 'manual_review') { %>
+                    <form method="post" action="/admin/topups/<%= topup._id %>/resolve" class="form-stack compact-form">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                      <input type="text" name="note" minlength="5" maxlength="500" required placeholder="Catatan pemeriksaan">
+                      <div class="action-row">
+                        <button class="btn btn-primary btn-sm" type="submit" name="action" value="approve">Setujui</button>
+                        <% if (!topup.credited) { %><button class="btn btn-danger btn-sm" type="submit" name="action" value="reject">Tolak</button><% } %>
+                      </div>
+                    </form>
+                  <% } else { %>
+                    <span class="table-sub">Tidak ada tindakan</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <%- include('../partials/pagination', { pagination }) %>
+  </div>
+</section>
+<%- include('../partials/footer') %>

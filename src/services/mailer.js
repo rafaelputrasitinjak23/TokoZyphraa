@@ -5,6 +5,7 @@ let transporter;
 function getTransporter() {
   if (transporter) return transporter;
   const port = Number(process.env.SMTP_PORT || 587);
+  if (!Number.isSafeInteger(port) || port < 1 || port > 65535) throw new Error('SMTP_PORT tidak valid.');
   transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port,
@@ -15,7 +16,10 @@ function getTransporter() {
     },
     pool: true,
     maxConnections: 3,
-    maxMessages: 100
+    maxMessages: 100,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 20000
   });
   return transporter;
 }
