@@ -9,9 +9,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=20260626-menu-fix-2">
+  <link rel="stylesheet" href="/css/style.css?v=20260626-account-nav-3">
 </head>
-<body class="<%= isAdmin ? 'admin-shell' : 'market-shell' %>">
+<body class="<%= isAdmin ? 'admin-shell' : 'market-shell' %><%= currentUser?.role === 'user' ? ' has-mobile-market-nav' : '' %>">
   <%- include('icon-sprite') %>
   <div class="ambient ambient-one"></div>
   <div class="ambient ambient-two"></div>
@@ -29,7 +29,7 @@
           <span>Produk</span>
         </a>
         <% if (currentUser?.role === 'user') { %>
-          <a class="<%= currentPath === '/account' ? 'active' : '' %>" href="/account">
+          <a class="<%= currentPath === '/account' || currentPath === '/account/profile' ? 'active' : '' %>" href="/account">
             <svg class="svg-icon" aria-hidden="true"><use href="#icon-dashboard"></use></svg>
             <span>Dashboard</span>
           </a>
@@ -40,10 +40,6 @@
           <a class="<%= currentPath.startsWith('/account/wallet') ? 'active' : '' %>" href="/account/wallet">
             <svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg>
             <span>Dompet</span>
-          </a>
-          <a class="<%= currentPath === '/account/profile' ? 'active' : '' %>" href="/account/profile">
-            <svg class="svg-icon" aria-hidden="true"><use href="#icon-user"></use></svg>
-            <span>Profil</span>
           </a>
         <% } %>
         <% if (currentUser?.role === 'admin') { %>
@@ -75,7 +71,7 @@
           <a class="btn btn-primary btn-sm" href="/auth/register">Daftar</a>
         <% } else { %>
           <% if (currentUser.role === 'user') { %>
-            <a class="user-chip" href="/account/profile" aria-label="Buka profil <%= currentUser.name %>">
+            <a class="user-chip" href="/account" aria-label="Buka dashboard <%= currentUser.name %>">
               <span class="user-chip-avatar">
                 <% if (currentUser.hasAvatar) { %>
                   <img src="/account/avatar" alt="">
@@ -179,9 +175,9 @@
           <span><strong>Pesanan</strong><small>Status dan riwayat pembelian</small></span>
           <svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
         </a>
-        <a class="<%= currentPath === '/account/profile' || currentPath === '/account' ? 'active' : '' %>" href="/account/profile">
+        <a class="<%= currentPath === '/account' || currentPath === '/account/profile' ? 'active' : '' %>" href="/account">
           <span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-user"></use></svg></span>
-          <span><strong>Profil</strong><small>Kelola data akun</small></span>
+          <span><strong>Akun Saya</strong><small>Ringkasan dan log pesanan</small></span>
           <svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
         </a>
       <% } %>
@@ -211,7 +207,7 @@
     </div>
   </aside>
 
-  <% if (!isAdmin) { %>
+  <% if (!isAdmin && currentUser?.role === 'user') { %>
     <nav class="mobile-market-nav" aria-label="Navigasi utama mobile">
       <a class="<%= currentPath === '/' ? 'active' : '' %>" href="/#catalog">
         <svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg>
@@ -224,17 +220,17 @@
         </span>
         <span>Keranjang</span>
       </a>
-      <a class="<%= currentPath.startsWith('/account/wallet') ? 'active' : '' %>" href="<%= currentUser?.role === 'user' ? '/account/wallet' : '/auth/login' %>">
+      <a class="<%= currentPath.startsWith('/account/wallet') ? 'active' : '' %>" href="/account/wallet">
         <svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg>
         <span>Dompet</span>
       </a>
-      <a class="<%= currentPath.startsWith('/account/orders') ? 'active' : '' %>" href="<%= currentUser?.role === 'user' ? '/account/orders' : '/auth/login' %>">
+      <a class="<%= currentPath.startsWith('/account/orders') ? 'active' : '' %>" href="/account/orders">
         <svg class="svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg>
         <span>Pesanan</span>
       </a>
-      <a class="<%= currentPath === '/account/profile' || currentPath === '/account' ? 'active' : '' %>" href="<%= currentUser?.role === 'user' ? '/account/profile' : '/auth/login' %>">
+      <a class="<%= currentPath === '/account' || currentPath === '/account/profile' ? 'active' : '' %>" href="/account">
         <svg class="svg-icon" aria-hidden="true"><use href="#icon-user"></use></svg>
-        <span>Profil</span>
+        <span>Akun</span>
       </a>
     </nav>
   <% } %>

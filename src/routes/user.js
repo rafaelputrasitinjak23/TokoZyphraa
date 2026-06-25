@@ -33,42 +33,66 @@ function makeTopupNumber() {
 }
 
 async function getPurchaseStats(userId) {
-  const [stats] = await Order.aggregate([
-    { $match: { user: new mongoose.Types.ObjectId(userId), status: 'completed' } },
-    { $unwind: '$items' },
+  const [result] = await Order.aggregate([
+    { $match: { user: new mongoose.Types.ObjectId(userId) } },
     {
-      $group: {
-        _id: '$_id',
-        orderValue: { $first: { $add: ['$payableAmount', '$walletUsed'] } },
-        productCount: { $sum: '$items.quantity' },
-        uniqueProducts: { $addToSet: '$items.product' }
-      }
-    },
-    {
-      $group: {
-        _id: null,
-        completedOrders: { $sum: 1 },
-        totalSpent: { $sum: '$orderValue' },
-        totalProducts: { $sum: '$productCount' },
-        productSets: { $push: '$uniqueProducts' }
-      }
-    },
-    {
-      $project: {
-        _id: 0,
-        completedOrders: 1,
-        totalSpent: 1,
-        totalProducts: 1,
-        uniqueProducts: {
-          $size: {
-            $reduce: { input: '$productSets', initialValue: [], in: { $setUnion: ['$$value', '$$this'] } }
+      $facet: {
+        orderSummary: [
+          {
+            $group: {
+              _id: null,
+              totalOrders: { $sum: 1 },
+              completedOrders: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
+              pendingOrders: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] } }
+            }
           }
-        }
+        ],
+        purchaseSummary: [
+          { $match: { status: 'completed' } },
+          { $unwind: '$items' },
+          {
+            $group: {
+              _id: '$_id',
+              orderValue: { $first: { $add: ['$payableAmount', '$walletUsed'] } },
+              productCount: { $sum: '$items.quantity' },
+              uniqueProducts: { $addToSet: '$items.product' }
+            }
+          },
+          {
+            $group: {
+              _id: null,
+              totalSpent: { $sum: '$orderValue' },
+              totalProducts: { $sum: '$productCount' },
+              productSets: { $push: '$uniqueProducts' }
+            }
+          },
+          {
+            $project: {
+              _id: 0,
+              totalSpent: 1,
+              totalProducts: 1,
+              uniqueProducts: {
+                $size: {
+                  $reduce: { input: '$productSets', initialValue: [], in: { $setUnion: ['$$value', '$$this'] } }
+                }
+              }
+            }
+          }
+        ]
       }
     }
   ]);
 
-  return stats || { completedOrders: 0, totalSpent: 0, totalProducts: 0, uniqueProducts: 0 };
+  const orderSummary = result?.orderSummary?.[0] || {};
+  const purchaseSummary = result?.purchaseSummary?.[0] || {};
+  return {
+    totalOrders: orderSummary.totalOrders || 0,
+    completedOrders: orderSummary.completedOrders || 0,
+    pendingOrders: orderSummary.pendingOrders || 0,
+    totalSpent: purchaseSummary.totalSpent || 0,
+    totalProducts: purchaseSummary.totalProducts || 0,
+    uniqueProducts: purchaseSummary.uniqueProducts || 0
+  };
 }
 
 function decodeAvatarData(value) {
@@ -103,7 +127,7 @@ function decodeAvatarData(value) {
 router.get('/', asyncHandler(async (req, res) => {
   const [user, recentOrders, purchaseStats] = await Promise.all([
     User.findById(req.session.user.id).select('name email phone bio walletBalance createdAt emailVerifiedAt').lean(),
-    Order.find({ user: req.session.user.id }).sort({ createdAt: -1 }).limit(5).lean(),
+    Order.find({ user: req.session.user.id }).sort({ createdAt: -1 }).limit(10).lean(),
     getPurchaseStats(req.session.user.id)
   ]);
   res.render('user/dashboard', { title: 'Dashboard Akun', user, recentOrders, purchaseStats });

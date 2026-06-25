@@ -19,7 +19,6 @@ function redirectToLogin(req, res, role) {
   if (req.session) {
     req.flash('error', role === 'admin' ? 'Akses administrator diperlukan.' : 'Silakan masuk terlebih dahulu.');
   }
-  if (role === 'admin') return res.redirect('/admin/login');
   return res.redirect(`/auth/login?next=${encodeURIComponent(req.originalUrl)}`);
 }
 

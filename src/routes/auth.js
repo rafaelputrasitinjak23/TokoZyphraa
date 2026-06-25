@@ -138,7 +138,7 @@ router.post('/login', requireGuest, authLimiter, asyncHandler(async (req, res) =
     return res.redirect('/auth/login');
   }
 
-  const user = validator.isEmail(email) ? await User.findOne({ email, role: 'user', isActive: true }) : null;
+  const user = validator.isEmail(email) ? await User.findOne({ email, isActive: true }) : null;
   const valid = user && await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
     req.flash('error', 'Email atau kata sandi tidak sesuai.');
@@ -149,7 +149,11 @@ router.post('/login', requireGuest, authLimiter, asyncHandler(async (req, res) =
   await user.save();
   await regenerateSession(req);
   req.session.user = sessionUser(user);
-  res.redirect(nextUrl);
+
+  const destination = user.role === 'admin'
+    ? (nextUrl.startsWith('/admin') ? nextUrl : '/admin')
+    : (nextUrl.startsWith('/admin') ? '/account' : nextUrl);
+  res.redirect(destination);
 }));
 
 router.post('/logout', asyncHandler(async (req, res) => {

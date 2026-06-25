@@ -1,69 +1,63 @@
 <%- include('../partials/header') %>
-<section class="section page-section">
+<section class="section page-section account-dashboard-page">
   <div class="container">
     <div class="section-heading account-heading">
       <div>
         <span class="eyebrow"><svg class="svg-icon" aria-hidden="true"><use href="#icon-dashboard"></use></svg>AKUN SAYA</span>
         <h1>Halo, <%= user.name %></h1>
-        <p>Pantau pembelian, saldo, dan data profil Anda dari satu halaman.</p>
+        <p>Lihat ringkasan aktivitas dan riwayat pesanan akun Anda.</p>
       </div>
-      <a class="btn btn-ghost btn-icon-label" href="/account/profile"><svg class="svg-icon" aria-hidden="true"><use href="#icon-edit"></use></svg><span>Edit Profil</span></a>
+      <a class="btn btn-ghost btn-icon-label" href="/account/profile">
+        <svg class="svg-icon" aria-hidden="true"><use href="#icon-edit"></use></svg>
+        <span>Edit Profil</span>
+      </a>
     </div>
 
-    <div class="account-overview">
-      <article class="profile-compact glass-card">
-        <div class="profile-avatar profile-avatar-medium">
-          <% if (currentUser?.hasAvatar) { %>
-            <img src="/account/avatar" alt="Foto profil <%= user.name %>">
-          <% } else { %>
-            <span><%= user.name.slice(0, 1).toUpperCase() %></span>
-          <% } %>
-        </div>
-        <div>
-          <strong><%= user.name %></strong>
-          <span><%= user.email %></span>
-          <small><svg class="svg-icon" aria-hidden="true"><use href="#icon-check-circle"></use></svg><%= user.emailVerifiedAt ? 'Email terverifikasi' : 'Email belum terverifikasi' %></small>
-        </div>
-        <a class="btn-icon-label" href="/account/profile"><span>Kelola akun</span><svg class="svg-icon" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a>
+    <div class="stats-grid account-stats account-dashboard-stats">
+      <article class="stat-card glass-card market-stat-card">
+        <span class="market-icon market-icon-blue"><svg class="svg-icon" aria-hidden="true"><use href="#icon-receipt"></use></svg></span>
+        <span>Total Pesanan</span>
+        <strong><%= purchaseStats.totalOrders %></strong>
+        <a href="/account/orders">Lihat semua pesanan</a>
       </article>
+      <article class="stat-card glass-card market-stat-card">
+        <span class="market-icon market-icon-green"><svg class="svg-icon" aria-hidden="true"><use href="#icon-check-circle"></use></svg></span>
+        <span>Pesanan Selesai</span>
+        <strong><%= purchaseStats.completedOrders %></strong>
+        <small>Pesanan yang telah selesai</small>
+      </article>
+      <article class="stat-card glass-card market-stat-card">
+        <span class="market-icon market-icon-orange"><svg class="svg-icon" aria-hidden="true"><use href="#icon-clock"></use></svg></span>
+        <span>Menunggu Dibayar</span>
+        <strong><%= purchaseStats.pendingOrders %></strong>
+        <a href="/account/orders">Periksa pembayaran</a>
+      </article>
+      <article class="stat-card glass-card market-stat-card">
+        <span class="market-icon market-icon-purple"><svg class="svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg></span>
+        <span>Produk Dibeli</span>
+        <strong><%= purchaseStats.totalProducts %></strong>
+        <small><%= purchaseStats.uniqueProducts %> produk berbeda</small>
+      </article>
+    </div>
 
-      <div class="stats-grid account-stats">
-        <div class="stat-card glass-card market-stat-card">
-          <span class="market-icon market-icon-blue"><svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg></span>
-          <span>Total Produk Dibeli</span>
-          <strong><%= purchaseStats.totalProducts %></strong>
-          <small><%= purchaseStats.uniqueProducts %> produk berbeda</small>
-        </div>
-        <div class="stat-card glass-card market-stat-card">
-          <span class="market-icon market-icon-green"><svg class="svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg></span>
-          <span>Pesanan Selesai</span>
-          <strong><%= purchaseStats.completedOrders %></strong>
-          <a href="/account/orders">Lihat pesanan</a>
-        </div>
-        <div class="stat-card glass-card market-stat-card">
-          <span class="market-icon market-icon-orange"><svg class="svg-icon" aria-hidden="true"><use href="#icon-receipt"></use></svg></span>
-          <span>Total Nilai Belanja</span>
-          <strong><%= formatRupiah(purchaseStats.totalSpent) %></strong>
-          <small>Setelah diskon dan voucher</small>
-        </div>
-        <div class="stat-card glass-card market-stat-card">
-          <span class="market-icon market-icon-purple"><svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg></span>
-          <span>Saldo Dompet</span>
-          <strong><%= formatRupiah(user.walletBalance) %></strong>
-          <a href="/account/wallet">Top up & riwayat</a>
-        </div>
+    <div class="section-heading subheading order-log-heading">
+      <div>
+        <span class="eyebrow"><svg class="svg-icon" aria-hidden="true"><use href="#icon-history"></use></svg>AKTIVITAS TERBARU</span>
+        <h2>Log Pesanan</h2>
       </div>
+      <a class="text-link btn-icon-label" href="/account/orders">
+        <span>Semua pesanan</span>
+        <svg class="svg-icon" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+      </a>
     </div>
 
-    <div class="section-heading subheading">
-      <div><h2>Pesanan Terbaru</h2></div>
-      <a class="text-link btn-icon-label" href="/account/orders"><span>Semua pesanan</span><svg class="svg-icon" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a>
-    </div>
     <% if (recentOrders.length) { %>
-      <div class="table-card glass-card">
+      <div class="table-card glass-card account-order-log">
         <div class="responsive-table">
           <table>
-            <thead><tr><th>Pesanan</th><th>Tanggal</th><th>Total</th><th>Status</th><th></th></tr></thead>
+            <thead>
+              <tr><th>Pesanan</th><th>Tanggal</th><th>Total</th><th>Status</th><th>Aksi</th></tr>
+            </thead>
             <tbody>
               <% recentOrders.forEach((order) => { %>
                 <tr>
@@ -71,7 +65,12 @@
                   <td><%= formatDate(order.createdAt) %></td>
                   <td><%= formatRupiah(order.payableAmount + order.walletUsed) %></td>
                   <td><span class="status-pill status-<%= order.status %>"><%= order.status %></span></td>
-                  <td><a class="btn-icon-label" href="/account/orders/<%= order.orderNumber %>"><span>Detail</span><svg class="svg-icon" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a></td>
+                  <td>
+                    <a class="btn-icon-label" href="/account/orders/<%= order.orderNumber %>">
+                      <span>Detail</span>
+                      <svg class="svg-icon" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+                    </a>
+                  </td>
                 </tr>
               <% }) %>
             </tbody>
@@ -79,7 +78,15 @@
         </div>
       </div>
     <% } else { %>
-      <div class="empty-state glass-card"><svg class="empty-state-icon svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg><h2>Belum ada pesanan</h2><p>Mulai pilih produk untuk melihat ringkasan pembelian di sini.</p><a class="btn btn-primary btn-icon-label" href="/"><svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg><span>Belanja Sekarang</span></a></div>
+      <div class="empty-state glass-card">
+        <svg class="empty-state-icon svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg>
+        <h2>Belum ada pesanan</h2>
+        <p>Pesanan yang Anda buat akan tercatat di halaman ini.</p>
+        <a class="btn btn-primary btn-icon-label" href="/">
+          <svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg>
+          <span>Belanja Sekarang</span>
+        </a>
+      </div>
     <% } %>
   </div>
 </section>

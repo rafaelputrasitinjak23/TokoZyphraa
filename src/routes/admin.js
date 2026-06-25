@@ -1,8 +1,6 @@
 const express = require('express');
 const crypto = require('crypto');
-const bcrypt = require('bcryptjs');
 const slugify = require('slugify');
-const validator = require('validator');
 const User = require('../models/User');
 const Product = require('../models/Product');
 const Voucher = require('../models/Voucher');
@@ -12,15 +10,12 @@ const WalletTopup = require('../models/WalletTopup');
 const AdminAuditLog = require('../models/AdminAuditLog');
 const { requireAdmin } = require('../middleware/auth');
 const noStore = require('../middleware/noStore');
-const { authLimiter } = require('../middleware/rateLimits');
-const { verifyCaptcha } = require('../utils/captcha');
 const { completeOrder } = require('../services/orderFulfillment');
 const { cancelPendingOrderSafely } = require('../services/orderCancellation');
 const { adjustWallet } = require('../services/walletService');
 const { toggleReviewPublication } = require('../services/reviewService');
 const { approveWalletTopup, rejectWalletTopup } = require('../services/walletTopupResolution');
 const { checkbox, parseDate, parseInteger, parsePage } = require('../utils/input');
-const { sessionUser, regenerateSession } = require('../utils/session');
 const { ADMIN_PAGE_SIZE } = require('../constants/limits');
 const asyncHandler = require('../utils/asyncHandler');
 
@@ -137,31 +132,9 @@ async function audit(req, action, targetType, targetId, details = {}) {
   });
 }
 
-router.get('/login', (req, res) => {
-  if (req.session.user?.role === 'admin') return res.redirect('/admin');
-  res.render('admin/login', { title: 'Login Administrator' });
+router.all('/login', (req, res) => {
+  res.redirect(303, '/auth/login?next=/admin');
 });
-
-router.post('/login', authLimiter, asyncHandler(async (req, res) => {
-  const email = String(req.body.email || '').trim().toLowerCase();
-  const password = String(req.body.password || '');
-  if (!verifyCaptcha(req, 'admin', req.body.captcha)) {
-    req.flash('error', 'CAPTCHA tidak sesuai atau sudah kedaluwarsa.');
-    return res.redirect('/admin/login');
-  }
-
-  const admin = validator.isEmail(email) ? await User.findOne({ email, role: 'admin', isActive: true }) : null;
-  if (!admin || !await bcrypt.compare(password, admin.passwordHash)) {
-    req.flash('error', 'Kredensial administrator tidak valid.');
-    return res.redirect('/admin/login');
-  }
-
-  admin.lastLoginAt = new Date();
-  await admin.save();
-  await regenerateSession(req);
-  req.session.user = sessionUser(admin);
-  res.redirect('/admin');
-}));
 
 router.use(requireAdmin);
 
