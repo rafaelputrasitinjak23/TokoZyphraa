@@ -1125,3 +1125,73 @@ th { color: #64748b; }
   .responsive-menu-links > a,
   .nav-toggle { transition: none; }
 }
+
+.user-admin-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.status-pill.role-admin {
+  background: rgba(109, 40, 217, .12);
+  color: #c4b5fd;
+  border: 1px solid rgba(167, 139, 250, .24);
+}
+
+.status-pill.role-user {
+  background: rgba(2, 132, 199, .1);
+  color: #7dd3fc;
+  border: 1px solid rgba(56, 189, 248, .22);
+}
+
+.user-admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.user-admin-actions form {
+  margin: 0;
+}
+
+.current-admin-note {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(109, 40, 217, .08);
+  color: #c4b5fd;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .user-admin-badges {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+
+  .user-admin-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .user-admin-actions form,
+  .user-admin-actions .btn,
+  .user-admin-actions .text-button,
+  .current-admin-note {
+    width: 100%;
+  }
+
+  .user-admin-actions .btn,
+  .user-admin-actions .text-button {
+    justify-content: center;
+    text-align: center;
+  }
+}

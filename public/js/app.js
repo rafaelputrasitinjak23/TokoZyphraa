@@ -101,7 +101,8 @@
   });
 
   document.querySelectorAll('form[data-disable-on-submit]').forEach((form) => {
-    form.addEventListener('submit', () => {
+    form.addEventListener('submit', (event) => {
+      if (event.defaultPrevented) return;
       form.querySelectorAll('button[type="submit"]').forEach((button) => {
         button.disabled = true;
       });

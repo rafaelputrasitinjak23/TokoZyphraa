@@ -23,11 +23,11 @@ async function approveWalletTopup(topupId, note) {
     if (!existing) {
       let user;
       if (topup.credited) {
-        user = await User.findOne({ _id: topup.user, role: 'user' }).session(session);
+        user = await User.findOne({ _id: topup.user }).session(session);
         resolutionNote = `Diselesaikan tanpa menambah saldo ulang karena top up sudah memiliki tanda credited: ${note}`;
       } else {
         user = await User.findOneAndUpdate(
-          { _id: topup.user, role: 'user' },
+          { _id: topup.user },
           { $inc: { walletBalance: topup.amount } },
           { new: true, session, runValidators: true }
         );

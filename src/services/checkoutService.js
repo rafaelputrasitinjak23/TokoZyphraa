@@ -74,7 +74,7 @@ async function createCheckoutOrder({ userId, cart, voucherCode, useWallet, payme
       const existing = await Order.findOne({ user: userId, checkoutToken }).session(session);
       if (existing) return { order: existing, created: false };
 
-      const user = await User.findOne({ _id: userId, role: 'user', isActive: true }).session(session);
+      const user = await User.findOne({ _id: userId, isActive: true }).session(session);
       if (!user) {
         const error = new Error('Akun pengguna tidak aktif atau tidak ditemukan.');
         error.status = 403;

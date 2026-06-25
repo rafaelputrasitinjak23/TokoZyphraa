@@ -8,6 +8,7 @@ const Order = require('../models/Order');
 const Review = require('../models/Review');
 const WalletTopup = require('../models/WalletTopup');
 const AdminAuditLog = require('../models/AdminAuditLog');
+const SystemLock = require('../models/SystemLock');
 const { requireAdmin } = require('../middleware/auth');
 const noStore = require('../middleware/noStore');
 const { completeOrder } = require('../services/orderFulfillment');
@@ -18,6 +19,7 @@ const { approveWalletTopup, rejectWalletTopup } = require('../services/walletTop
 const { checkbox, parseDate, parseInteger, parsePage } = require('../utils/input');
 const { ADMIN_PAGE_SIZE } = require('../constants/limits');
 const asyncHandler = require('../utils/asyncHandler');
+const { withMongoTransaction } = require('../utils/transaction');
 
 const router = express.Router();
 router.use(noStore);
@@ -141,7 +143,7 @@ router.use(requireAdmin);
 router.get('/', asyncHandler(async (req, res) => {
   const [productCount, userCount, pendingCount, completedCount, revenueAgg, recentOrders] = await Promise.all([
     Product.countDocuments(),
-    User.countDocuments({ role: 'user' }),
+    User.countDocuments(),
     Order.countDocuments({ status: 'pending' }),
     Order.countDocuments({ status: 'completed' }),
     Order.aggregate([
@@ -319,13 +321,17 @@ router.post('/orders/:id/status', asyncHandler(async (req, res) => {
 
 router.get('/users', asyncHandler(async (req, res) => {
   const page = parsePage(req.query.page);
-  const filter = { role: 'user' };
   const [users, total] = await Promise.all([
-    User.find(filter).sort({ createdAt: -1 }).skip((page - 1) * ADMIN_PAGE_SIZE).limit(ADMIN_PAGE_SIZE).lean(),
-    User.countDocuments(filter)
+    User.find().sort({ createdAt: -1 }).skip((page - 1) * ADMIN_PAGE_SIZE).limit(ADMIN_PAGE_SIZE).lean(),
+    User.countDocuments()
   ]);
   const usersWithTokens = users.map((user) => ({ ...user, adjustmentToken: crypto.randomUUID() }));
-  res.render('admin/users', { title: 'Kelola Pengguna', users: usersWithTokens, pagination: pagination(page, total) });
+  res.render('admin/users', {
+    title: 'Kelola Pengguna',
+    users: usersWithTokens,
+    currentAdminId: String(req.session.user.id),
+    pagination: pagination(page, total)
+  });
 }));
 
 router.post('/users/:id/wallet', asyncHandler(async (req, res) => {
@@ -351,14 +357,90 @@ router.post('/users/:id/wallet', asyncHandler(async (req, res) => {
   res.redirect('/admin/users');
 }));
 
+router.post('/users/:id/role', asyncHandler(async (req, res) => {
+  const targetRole = req.body.role === 'admin' ? 'admin' : 'user';
+  const currentAdminId = String(req.session.user.id);
+  if (String(req.params.id) === currentAdminId) {
+    req.flash('error', 'Role akun yang sedang digunakan tidak dapat diubah dari sesi ini.');
+    return res.redirect('/admin/users');
+  }
+
+  const result = await withMongoTransaction(async (session) => {
+    await SystemLock.findOneAndUpdate(
+      { _id: 'admin-role-management' },
+      { $inc: { version: 1 } },
+      { upsert: true, new: true, session, setDefaultsOnInsert: true }
+    );
+
+    const user = await User.findById(req.params.id).session(session);
+    if (!user) return { notFound: true };
+    if (user.role === targetRole) return { user, unchanged: true, previousRole: user.role };
+
+    if (user.role === 'admin' && targetRole === 'user' && user.isActive) {
+      const activeAdminCount = await User.countDocuments({ role: 'admin', isActive: true }).session(session);
+      if (activeAdminCount <= 1) return { blocked: true, message: 'Admin aktif terakhir tidak dapat diturunkan menjadi pengguna biasa.' };
+    }
+
+    const previousRole = user.role;
+    user.role = targetRole;
+    user.sessionVersion = Number(user.sessionVersion || 0) + 1;
+    await user.save({ session });
+    return { user, previousRole };
+  });
+
+  if (result.notFound) return res.sendStatus(404);
+  if (result.blocked) {
+    req.flash('error', result.message);
+    return res.redirect('/admin/users');
+  }
+  if (result.unchanged) {
+    req.flash('success', 'Role akun tersebut sudah sesuai.');
+    return res.redirect('/admin/users');
+  }
+
+  await audit(req, 'user.role', 'User', result.user._id, { from: result.previousRole, to: result.user.role });
+  req.flash('success', result.user.role === 'admin'
+    ? 'Pengguna berhasil dijadikan admin. Sesi aktif akun tersebut telah dicabut agar hak akses diperbarui.'
+    : 'Akses admin berhasil dicabut. Sesi aktif akun tersebut telah dicabut.');
+  res.redirect('/admin/users');
+}));
+
 router.post('/users/:id/toggle', asyncHandler(async (req, res) => {
-  const user = await User.findOne({ _id: req.params.id, role: 'user' });
-  if (!user) return res.sendStatus(404);
-  user.isActive = !user.isActive;
-  user.sessionVersion += 1;
-  await user.save();
-  await audit(req, 'user.toggle', 'User', user._id, { isActive: user.isActive });
-  req.flash('success', `Akun pengguna ${user.isActive ? 'diaktifkan' : 'dinonaktifkan'}.`);
+  const currentAdminId = String(req.session.user.id);
+  if (String(req.params.id) === currentAdminId) {
+    req.flash('error', 'Akun yang sedang digunakan tidak dapat dinonaktifkan dari sesi ini.');
+    return res.redirect('/admin/users');
+  }
+
+  const result = await withMongoTransaction(async (session) => {
+    await SystemLock.findOneAndUpdate(
+      { _id: 'admin-role-management' },
+      { $inc: { version: 1 } },
+      { upsert: true, new: true, session, setDefaultsOnInsert: true }
+    );
+
+    const user = await User.findById(req.params.id).session(session);
+    if (!user) return { notFound: true };
+
+    if (user.role === 'admin' && user.isActive) {
+      const activeAdminCount = await User.countDocuments({ role: 'admin', isActive: true }).session(session);
+      if (activeAdminCount <= 1) return { blocked: true, message: 'Admin aktif terakhir tidak dapat dinonaktifkan.' };
+    }
+
+    user.isActive = !user.isActive;
+    user.sessionVersion = Number(user.sessionVersion || 0) + 1;
+    await user.save({ session });
+    return { user };
+  });
+
+  if (result.notFound) return res.sendStatus(404);
+  if (result.blocked) {
+    req.flash('error', result.message);
+    return res.redirect('/admin/users');
+  }
+
+  await audit(req, 'user.toggle', 'User', result.user._id, { isActive: result.user.isActive, role: result.user.role });
+  req.flash('success', `Akun ${result.user.isActive ? 'diaktifkan' : 'dinonaktifkan'}.`);
   res.redirect('/admin/users');
 }));
 

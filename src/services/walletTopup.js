@@ -33,7 +33,7 @@ async function completeWalletTopup(topupOrId, completedAt = new Date()) {
     }
 
     const user = await User.findOneAndUpdate(
-      { _id: topup.user, role: 'user' },
+      { _id: topup.user },
       { $inc: { walletBalance: topup.amount } },
       { new: true, session, runValidators: true }
     );

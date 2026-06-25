@@ -52,7 +52,7 @@ router.get('/', requireUser, asyncHandler(async (req, res) => {
     req.flash('error', 'Keranjang berubah karena stok atau produk tidak lagi tersedia. Periksa kembali keranjang Anda.');
     return res.redirect('/cart');
   }
-  const user = await User.findOne({ _id: req.session.user.id, role: 'user', isActive: true }).lean();
+  const user = await User.findOne({ _id: req.session.user.id, isActive: true }).lean();
   if (!user) return req.session.destroy(() => res.redirect('/auth/login'));
   const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
   const requiresShipping = items.some((item) => item.product.deliveryType === 'physical');

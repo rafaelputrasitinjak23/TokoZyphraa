@@ -150,7 +150,7 @@ router.get('/profile', asyncHandler(async (req, res) => {
 }));
 
 router.post('/profile', asyncHandler(async (req, res) => {
-  const user = await User.findOne({ _id: req.session.user.id, role: 'user', isActive: true });
+  const user = await User.findOne({ _id: req.session.user.id, isActive: true });
   if (!user) {
     req.flash('error', 'Akun tidak ditemukan. Silakan masuk kembali.');
     return res.redirect('/auth/login');
@@ -206,7 +206,7 @@ router.post('/password', authLimiter, asyncHandler(async (req, res) => {
     return res.redirect('/account/profile#password');
   }
 
-  const user = await User.findOne({ _id: req.session.user.id, role: 'user', isActive: true });
+  const user = await User.findOne({ _id: req.session.user.id, isActive: true });
   if (!user || !await bcrypt.compare(currentPassword, user.passwordHash)) {
     req.flash('error', 'Kata sandi saat ini tidak sesuai.');
     return res.redirect('/account/profile#password');

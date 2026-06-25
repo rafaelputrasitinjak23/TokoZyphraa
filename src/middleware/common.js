@@ -62,7 +62,8 @@ function flashMiddleware(req, res, next) {
 
 function attachLocals(req, res, next) {
   res.locals.currentUser = req.session.user || null;
-  res.locals.isAdmin = req.session.user?.role === 'admin';
+  res.locals.canAccessAdmin = req.session.user?.role === 'admin';
+  res.locals.isAdmin = req.path === '/admin' || req.path.startsWith('/admin/');
   res.locals.csrfToken = ensureCsrfToken(req, res);
   res.locals.cartCount = (req.session.cart || []).reduce((total, item) => {
     const quantity = Number(item.quantity);

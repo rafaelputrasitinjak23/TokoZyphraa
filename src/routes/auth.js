@@ -150,9 +150,9 @@ router.post('/login', requireGuest, authLimiter, asyncHandler(async (req, res) =
   await regenerateSession(req);
   req.session.user = sessionUser(user);
 
-  const destination = user.role === 'admin'
-    ? (nextUrl.startsWith('/admin') ? nextUrl : '/admin')
-    : (nextUrl.startsWith('/admin') ? '/account' : nextUrl);
+  const destination = nextUrl.startsWith('/admin')
+    ? (user.role === 'admin' ? nextUrl : '/account')
+    : nextUrl;
   res.redirect(destination);
 }));
 

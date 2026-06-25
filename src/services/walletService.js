@@ -25,8 +25,8 @@ async function adjustWallet({ userId, amount, type, adminId, note, adjustmentTok
 
       const delta = type === 'credit' ? amount : -amount;
       const filter = type === 'debit'
-        ? { _id: userId, role: 'user', walletBalance: { $gte: amount } }
-        : { _id: userId, role: 'user' };
+        ? { _id: userId, walletBalance: { $gte: amount } }
+        : { _id: userId };
       const user = await User.findOneAndUpdate(
         filter,
         { $inc: { walletBalance: delta } },

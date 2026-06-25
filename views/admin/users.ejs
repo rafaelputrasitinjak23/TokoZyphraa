@@ -1,4 +1,86 @@
 <%- include('../partials/header') %>
-<section class="section page-section"><div class="container"><div class="admin-heading"><div><span class="eyebrow">ADMIN / PENGGUNA</span><h1>Kelola Pengguna & Dompet</h1></div></div><div class="user-admin-grid"><% users.forEach((user) => { %><article class="user-admin-card glass-card"><div class="user-admin-head"><div class="avatar"><%= user.name.slice(0,1).toUpperCase() %></div><div><h3><%= user.name %></h3><p><%= user.email %></p></div><span class="status-pill <%= user.isActive ? 'status-completed' : 'status-cancelled' %>"><%= user.isActive ? 'aktif' : 'nonaktif' %></span></div><div class="wallet-balance"><span>Saldo dompet</span><strong><%= formatRupiah(user.walletBalance) %></strong></div><form method="post" action="/admin/users/<%= user._id %>/wallet" class="wallet-adjust-form"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="adjustmentToken" value="<%= user.adjustmentToken %>"><select name="type"><option value="credit">Tambah saldo</option><option value="debit">Kurangi saldo</option></select><input type="number" name="amount" min="1" max="100000000" required placeholder="Nominal"><input type="text" name="note" maxlength="500" placeholder="Catatan"><button class="btn btn-primary btn-sm" type="submit">Proses</button></form><form method="post" action="/admin/users/<%= user._id %>/toggle"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="text-button <%= user.isActive ? 'danger-text' : '' %>" type="submit"><%= user.isActive ? 'Nonaktifkan akun' : 'Aktifkan akun' %></button></form></article><% }) %></div><%- include('../partials/pagination', { pagination }) %>
-</div></section>
+<section class="section page-section">
+  <div class="container">
+    <div class="admin-heading">
+      <div>
+        <span class="eyebrow">ADMIN / PENGGUNA</span>
+        <h1>Kelola Pengguna, Role & Dompet</h1>
+        <p>Semua akun dapat berbelanja. Role admin hanya menambahkan akses ke panel kontrol.</p>
+      </div>
+    </div>
+
+    <div class="user-admin-grid">
+      <% users.forEach((user) => { %>
+        <% const isCurrentAdmin = String(user._id) === currentAdminId; %>
+        <article class="user-admin-card glass-card">
+          <div class="user-admin-head">
+            <div class="avatar"><%= user.name.slice(0, 1).toUpperCase() %></div>
+            <div>
+              <h3><%= user.name %></h3>
+              <p><%= user.email %></p>
+            </div>
+            <div class="user-admin-badges">
+              <span class="status-pill <%= user.role === 'admin' ? 'role-admin' : 'role-user' %>">
+                <%= user.role === 'admin' ? 'admin' : 'pengguna' %>
+              </span>
+              <span class="status-pill <%= user.isActive ? 'status-completed' : 'status-cancelled' %>">
+                <%= user.isActive ? 'aktif' : 'nonaktif' %>
+              </span>
+            </div>
+          </div>
+
+          <div class="wallet-balance">
+            <span>Saldo dompet</span>
+            <strong><%= formatRupiah(user.walletBalance) %></strong>
+          </div>
+
+          <form method="post" action="/admin/users/<%= user._id %>/wallet" class="wallet-adjust-form" data-disable-on-submit>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="adjustmentToken" value="<%= user.adjustmentToken %>">
+            <select name="type" aria-label="Jenis penyesuaian saldo">
+              <option value="credit">Tambah saldo</option>
+              <option value="debit">Kurangi saldo</option>
+            </select>
+            <input type="number" name="amount" min="1" max="100000000" required placeholder="Nominal">
+            <input type="text" name="note" maxlength="500" placeholder="Catatan penyesuaian">
+            <button class="btn btn-primary btn-sm" type="submit">Proses Saldo</button>
+          </form>
+
+          <div class="user-admin-actions">
+            <% if (isCurrentAdmin) { %>
+              <span class="current-admin-note">Akun admin yang sedang digunakan</span>
+            <% } else { %>
+              <form
+                method="post"
+                action="/admin/users/<%= user._id %>/role"
+                data-confirm="<%= user.role === 'admin' ? 'Cabut akses admin dari akun ini?' : 'Jadikan akun ini sebagai admin?' %>"
+                data-disable-on-submit
+              >
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <input type="hidden" name="role" value="<%= user.role === 'admin' ? 'user' : 'admin' %>">
+                <button class="btn <%= user.role === 'admin' ? 'btn-ghost' : 'btn-primary' %> btn-sm" type="submit">
+                  <%= user.role === 'admin' ? 'Cabut Akses Admin' : 'Jadikan Admin' %>
+                </button>
+              </form>
+
+              <form
+                method="post"
+                action="/admin/users/<%= user._id %>/toggle"
+                data-confirm="<%= user.isActive ? 'Nonaktifkan akun ini?' : 'Aktifkan kembali akun ini?' %>"
+                data-disable-on-submit
+              >
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button class="text-button <%= user.isActive ? 'danger-text' : '' %>" type="submit">
+                  <%= user.isActive ? 'Nonaktifkan Akun' : 'Aktifkan Akun' %>
+                </button>
+              </form>
+            <% } %>
+          </div>
+        </article>
+      <% }) %>
+    </div>
+
+    <%- include('../partials/pagination', { pagination }) %>
+  </div>
+</section>
 <%- include('../partials/footer') %>

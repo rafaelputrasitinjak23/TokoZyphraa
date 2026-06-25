@@ -9,9 +9,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=20260626-account-nav-3">
+  <link rel="stylesheet" href="/css/style.css?v=20260626-admin-as-user-1">
 </head>
-<body class="<%= isAdmin ? 'admin-shell' : 'market-shell' %><%= currentUser?.role === 'user' ? ' has-mobile-market-nav' : '' %>">
+<body class="<%= isAdmin ? 'admin-shell' : 'market-shell' %><%= currentUser && !isAdmin ? ' has-mobile-market-nav' : '' %>">
   <%- include('icon-sprite') %>
   <div class="ambient ambient-one"></div>
   <div class="ambient ambient-two"></div>
@@ -24,37 +24,52 @@
       </a>
 
       <nav class="main-nav" aria-label="Navigasi utama desktop">
-        <a class="<%= currentPath === '/' ? 'active' : '' %>" href="/#catalog">
-          <svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg>
-          <span>Produk</span>
-        </a>
-        <% if (currentUser?.role === 'user') { %>
-          <a class="<%= currentPath === '/account' || currentPath === '/account/profile' ? 'active' : '' %>" href="/account">
-            <svg class="svg-icon" aria-hidden="true"><use href="#icon-dashboard"></use></svg>
-            <span>Dashboard</span>
-          </a>
-          <a class="<%= currentPath.startsWith('/account/orders') ? 'active' : '' %>" href="/account/orders">
-            <svg class="svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg>
-            <span>Pesanan</span>
-          </a>
-          <a class="<%= currentPath.startsWith('/account/wallet') ? 'active' : '' %>" href="/account/wallet">
-            <svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg>
-            <span>Dompet</span>
-          </a>
-        <% } %>
-        <% if (currentUser?.role === 'admin') { %>
+        <% if (isAdmin) { %>
           <a class="<%= currentPath === '/admin' ? 'active' : '' %>" href="/admin">
             <svg class="svg-icon" aria-hidden="true"><use href="#icon-dashboard"></use></svg>
             <span>Admin</span>
           </a>
           <a class="<%= currentPath.startsWith('/admin/products') ? 'active' : '' %>" href="/admin/products">
             <svg class="svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg>
-            <span>Kelola Produk</span>
+            <span>Produk</span>
+          </a>
+          <a class="<%= currentPath.startsWith('/admin/orders') ? 'active' : '' %>" href="/admin/orders">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-cart"></use></svg>
+            <span>Pesanan</span>
+          </a>
+          <a class="<%= currentPath.startsWith('/admin/users') ? 'active' : '' %>" href="/admin/users">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-user"></use></svg>
+            <span>Pengguna</span>
           </a>
           <a class="<%= currentPath.startsWith('/admin/topups') ? 'active' : '' %>" href="/admin/topups">
             <svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg>
             <span>Top Up</span>
           </a>
+        <% } else { %>
+          <a class="<%= currentPath === '/' ? 'active' : '' %>" href="/#catalog">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg>
+            <span>Produk</span>
+          </a>
+          <% if (currentUser) { %>
+            <a class="<%= currentPath === '/account' || currentPath === '/account/profile' ? 'active' : '' %>" href="/account">
+              <svg class="svg-icon" aria-hidden="true"><use href="#icon-dashboard"></use></svg>
+              <span>Dashboard</span>
+            </a>
+            <a class="<%= currentPath.startsWith('/account/orders') ? 'active' : '' %>" href="/account/orders">
+              <svg class="svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg>
+              <span>Pesanan</span>
+            </a>
+            <a class="<%= currentPath.startsWith('/account/wallet') ? 'active' : '' %>" href="/account/wallet">
+              <svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg>
+              <span>Dompet</span>
+            </a>
+          <% } %>
+          <% if (canAccessAdmin) { %>
+            <a href="/admin">
+              <svg class="svg-icon" aria-hidden="true"><use href="#icon-dashboard"></use></svg>
+              <span>Admin</span>
+            </a>
+          <% } %>
         <% } %>
       </nav>
 
@@ -66,24 +81,21 @@
             <% if (cartCount > 0) { %><b><%= cartCount %></b><% } %>
           </a>
         <% } %>
+
         <% if (!currentUser) { %>
           <a class="btn btn-ghost btn-sm" href="/auth/login">Masuk</a>
           <a class="btn btn-primary btn-sm" href="/auth/register">Daftar</a>
         <% } else { %>
-          <% if (currentUser.role === 'user') { %>
-            <a class="user-chip" href="/account" aria-label="Buka dashboard <%= currentUser.name %>">
-              <span class="user-chip-avatar">
-                <% if (currentUser.hasAvatar) { %>
-                  <img src="/account/avatar" alt="">
-                <% } else { %>
-                  <%= currentUser.name.slice(0, 1).toUpperCase() %>
-                <% } %>
-              </span>
-              <span class="user-chip-name"><%= currentUser.name %></span>
-            </a>
-          <% } else { %>
-            <span class="user-chip admin-chip"><span class="user-chip-name"><%= currentUser.name %></span></span>
-          <% } %>
+          <a class="user-chip <%= canAccessAdmin ? 'admin-chip' : '' %>" href="/account" aria-label="Buka dashboard <%= currentUser.name %>">
+            <span class="user-chip-avatar">
+              <% if (currentUser.hasAvatar) { %>
+                <img src="/account/avatar" alt="">
+              <% } else { %>
+                <%= currentUser.name.slice(0, 1).toUpperCase() %>
+              <% } %>
+            </span>
+            <span class="user-chip-name"><%= currentUser.name %></span>
+          </a>
           <form method="post" action="/auth/logout" class="inline-form header-logout">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <button class="btn btn-ghost btn-sm btn-icon-label" type="submit">
@@ -121,7 +133,7 @@
       <div class="responsive-menu-identity">
         <% if (currentUser) { %>
           <span class="responsive-menu-avatar">
-            <% if (currentUser.role === 'user' && currentUser.hasAvatar) { %>
+            <% if (currentUser.hasAvatar) { %>
               <img src="/account/avatar" alt="">
             <% } else { %>
               <%= currentUser.name.slice(0, 1).toUpperCase() %>
@@ -129,7 +141,7 @@
           </span>
           <span>
             <strong><%= currentUser.name %></strong>
-            <small><%= currentUser.role === 'admin' ? 'Administrator' : 'Akun pengguna' %></small>
+            <small><%= canAccessAdmin ? 'Pengguna & Administrator' : 'Akun pengguna' %></small>
           </span>
         <% } else { %>
           <span class="responsive-menu-avatar guest-avatar">
@@ -153,18 +165,16 @@
         <svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
       </a>
 
-      <% if (currentUser?.role !== 'admin') { %>
-        <a class="<%= currentPath === '/cart' || currentPath.startsWith('/checkout') ? 'active' : '' %>" href="/cart">
-          <span class="responsive-menu-link-icon">
-            <svg class="svg-icon" aria-hidden="true"><use href="#icon-cart"></use></svg>
-            <% if (cartCount > 0) { %><b><%= cartCount > 99 ? '99+' : cartCount %></b><% } %>
-          </span>
-          <span><strong>Keranjang</strong><small>Produk yang akan dibeli</small></span>
-          <svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
-        </a>
-      <% } %>
+      <a class="<%= currentPath === '/cart' || currentPath.startsWith('/checkout') ? 'active' : '' %>" href="/cart">
+        <span class="responsive-menu-link-icon">
+          <svg class="svg-icon" aria-hidden="true"><use href="#icon-cart"></use></svg>
+          <% if (cartCount > 0) { %><b><%= cartCount > 99 ? '99+' : cartCount %></b><% } %>
+        </span>
+        <span><strong>Keranjang</strong><small>Produk yang akan dibeli</small></span>
+        <svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+      </a>
 
-      <% if (currentUser?.role === 'user') { %>
+      <% if (currentUser) { %>
         <a class="<%= currentPath.startsWith('/account/wallet') ? 'active' : '' %>" href="/account/wallet">
           <span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg></span>
           <span><strong>Dompet</strong><small>Saldo dan riwayat transaksi</small></span>
@@ -182,10 +192,10 @@
         </a>
       <% } %>
 
-      <% if (currentUser?.role === 'admin') { %>
+      <% if (canAccessAdmin) { %>
         <a class="responsive-menu-admin-link <%= currentPath.startsWith('/admin') ? 'active' : '' %>" href="/admin">
           <span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-dashboard"></use></svg></span>
-          <span><strong>Halaman Admin</strong><small>Kelola toko dan transaksi</small></span>
+          <span><strong>Admin Control</strong><small>Kelola toko, pengguna, dan transaksi</small></span>
           <svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
         </a>
       <% } %>
@@ -207,7 +217,7 @@
     </div>
   </aside>
 
-  <% if (!isAdmin && currentUser?.role === 'user') { %>
+  <% if (!isAdmin && currentUser) { %>
     <nav class="mobile-market-nav" aria-label="Navigasi utama mobile">
       <a class="<%= currentPath === '/' ? 'active' : '' %>" href="/#catalog">
         <svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg>
