@@ -15,16 +15,15 @@
   <%- include('icon-sprite') %>
   <div class="ambient ambient-one"></div>
   <div class="ambient ambient-two"></div>
+
   <header class="site-header">
     <div class="container nav-wrap">
       <a class="brand" href="/" aria-label="Beranda TokoZyphra">
         <span class="brand-mark">Z</span>
         <span>Toko<span>Zyphra</span></span>
       </a>
-      <button class="nav-toggle" type="button" aria-label="Buka navigasi" aria-expanded="false" data-nav-toggle>
-        <svg class="svg-icon" aria-hidden="true"><use href="#icon-menu"></use></svg>
-      </button>
-      <nav class="main-nav" data-nav>
+
+      <nav class="main-nav" aria-label="Navigasi utama desktop">
         <a class="<%= currentPath === '/' ? 'active' : '' %>" href="/#catalog">
           <svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg>
           <span>Produk</span>
@@ -62,6 +61,7 @@
           </a>
         <% } %>
       </nav>
+
       <div class="nav-actions">
         <% if (!isAdmin) { %>
           <a class="cart-link" href="/cart" aria-label="Keranjang, <%= cartCount %> produk">
@@ -97,8 +97,119 @@
           </form>
         <% } %>
       </div>
+
+      <button
+        class="nav-toggle"
+        type="button"
+        aria-label="Buka menu"
+        aria-controls="responsive-menu"
+        aria-expanded="false"
+        data-responsive-menu-toggle
+      >
+        <svg class="svg-icon" aria-hidden="true"><use href="#icon-menu"></use></svg>
+      </button>
     </div>
   </header>
+
+  <div class="responsive-menu-overlay" data-responsive-menu-close hidden></div>
+  <aside
+    class="responsive-menu-drawer"
+    id="responsive-menu"
+    aria-label="Menu mobile dan tablet"
+    aria-hidden="true"
+    aria-modal="true"
+    role="dialog"
+    data-responsive-menu
+  >
+    <div class="responsive-menu-header">
+      <div class="responsive-menu-identity">
+        <% if (currentUser) { %>
+          <span class="responsive-menu-avatar">
+            <% if (currentUser.role === 'user' && currentUser.hasAvatar) { %>
+              <img src="/account/avatar" alt="">
+            <% } else { %>
+              <%= currentUser.name.slice(0, 1).toUpperCase() %>
+            <% } %>
+          </span>
+          <span>
+            <strong><%= currentUser.name %></strong>
+            <small><%= currentUser.role === 'admin' ? 'Administrator' : 'Akun pengguna' %></small>
+          </span>
+        <% } else { %>
+          <span class="responsive-menu-avatar guest-avatar">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-user"></use></svg>
+          </span>
+          <span>
+            <strong>Selamat datang</strong>
+            <small>Masuk untuk mengakses akun</small>
+          </span>
+        <% } %>
+      </div>
+      <button class="responsive-menu-close" type="button" aria-label="Tutup menu" data-responsive-menu-close>
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+
+    <nav class="responsive-menu-links" aria-label="Navigasi mobile dan tablet">
+      <a class="<%= currentPath === '/' ? 'active' : '' %>" href="/#catalog">
+        <span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg></span>
+        <span><strong>Produk</strong><small>Lihat katalog marketplace</small></span>
+        <svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+      </a>
+
+      <% if (currentUser?.role !== 'admin') { %>
+        <a class="<%= currentPath === '/cart' || currentPath.startsWith('/checkout') ? 'active' : '' %>" href="/cart">
+          <span class="responsive-menu-link-icon">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-cart"></use></svg>
+            <% if (cartCount > 0) { %><b><%= cartCount > 99 ? '99+' : cartCount %></b><% } %>
+          </span>
+          <span><strong>Keranjang</strong><small>Produk yang akan dibeli</small></span>
+          <svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+        </a>
+      <% } %>
+
+      <% if (currentUser?.role === 'user') { %>
+        <a class="<%= currentPath.startsWith('/account/wallet') ? 'active' : '' %>" href="/account/wallet">
+          <span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg></span>
+          <span><strong>Dompet</strong><small>Saldo dan riwayat transaksi</small></span>
+          <svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+        </a>
+        <a class="<%= currentPath.startsWith('/account/orders') ? 'active' : '' %>" href="/account/orders">
+          <span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg></span>
+          <span><strong>Pesanan</strong><small>Status dan riwayat pembelian</small></span>
+          <svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+        </a>
+        <a class="<%= currentPath === '/account/profile' || currentPath === '/account' ? 'active' : '' %>" href="/account/profile">
+          <span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-user"></use></svg></span>
+          <span><strong>Profil</strong><small>Kelola data akun</small></span>
+          <svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+        </a>
+      <% } %>
+
+      <% if (currentUser?.role === 'admin') { %>
+        <a class="responsive-menu-admin-link <%= currentPath.startsWith('/admin') ? 'active' : '' %>" href="/admin">
+          <span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-dashboard"></use></svg></span>
+          <span><strong>Halaman Admin</strong><small>Kelola toko dan transaksi</small></span>
+          <svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+        </a>
+      <% } %>
+    </nav>
+
+    <div class="responsive-menu-footer">
+      <% if (!currentUser) { %>
+        <a class="btn btn-ghost" href="/auth/login">Masuk</a>
+        <a class="btn btn-primary" href="/auth/register">Daftar</a>
+      <% } else { %>
+        <form method="post" action="/auth/logout" data-disable-on-submit>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="responsive-menu-logout" type="submit">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-logout"></use></svg>
+            <span>Keluar dari akun</span>
+          </button>
+        </form>
+      <% } %>
+    </div>
+  </aside>
 
   <% if (!isAdmin) { %>
     <nav class="mobile-market-nav" aria-label="Navigasi utama mobile">

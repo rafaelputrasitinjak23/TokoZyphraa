@@ -1,9 +1,73 @@
 (() => {
-  const navToggle = document.querySelector('[data-nav-toggle]');
-  const nav = document.querySelector('[data-nav]');
-  navToggle?.addEventListener('click', () => {
-    const open = nav.classList.toggle('open');
-    navToggle.setAttribute('aria-expanded', String(open));
+  const responsiveMenuToggle = document.querySelector('[data-responsive-menu-toggle]');
+  const responsiveMenu = document.querySelector('[data-responsive-menu]');
+  const responsiveMenuOverlay = document.querySelector('.responsive-menu-overlay');
+  const responsiveMenuCloseButtons = document.querySelectorAll('[data-responsive-menu-close]');
+  let menuReturnFocus = null;
+
+  const setResponsiveMenu = (open) => {
+    if (!responsiveMenu || !responsiveMenuToggle || !responsiveMenuOverlay) return;
+
+    responsiveMenu.classList.toggle('open', open);
+    responsiveMenuOverlay.hidden = !open;
+    responsiveMenuOverlay.classList.toggle('open', open);
+    responsiveMenu.setAttribute('aria-hidden', String(!open));
+    responsiveMenuToggle.setAttribute('aria-expanded', String(open));
+    responsiveMenuToggle.setAttribute('aria-label', open ? 'Tutup menu' : 'Buka menu');
+    document.body.classList.toggle('responsive-menu-open', open);
+
+    if (open) {
+      menuReturnFocus = document.activeElement;
+      responsiveMenu.querySelector('.responsive-menu-close')?.focus();
+      return;
+    }
+
+    if (menuReturnFocus instanceof HTMLElement) menuReturnFocus.focus();
+    menuReturnFocus = null;
+  };
+
+  responsiveMenuToggle?.addEventListener('click', () => {
+    setResponsiveMenu(!responsiveMenu?.classList.contains('open'));
+  });
+
+  responsiveMenuCloseButtons.forEach((button) => {
+    button.addEventListener('click', () => setResponsiveMenu(false));
+  });
+
+  responsiveMenu?.querySelectorAll('a').forEach((link) => {
+    link.addEventListener('click', () => setResponsiveMenu(false));
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (!responsiveMenu?.classList.contains('open')) return;
+
+    if (event.key === 'Escape') {
+      setResponsiveMenu(false);
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+
+    const focusableElements = [...responsiveMenu.querySelectorAll('a, button, input:not([type="hidden"])')]
+      .filter((element) => !element.disabled && element.getAttribute('aria-hidden') !== 'true');
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements.at(-1);
+
+    if (!firstElement || !lastElement) return;
+
+    if (event.shiftKey && document.activeElement === firstElement) {
+      event.preventDefault();
+      lastElement.focus();
+    } else if (!event.shiftKey && document.activeElement === lastElement) {
+      event.preventDefault();
+      firstElement.focus();
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 1024 && responsiveMenu?.classList.contains('open')) {
+      setResponsiveMenu(false);
+    }
   });
 
 
