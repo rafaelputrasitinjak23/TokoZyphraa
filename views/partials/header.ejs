@@ -6,10 +6,13 @@
   <meta name="description" content="TokoZyphra - marketplace produk digital, promo, voucher, dompet, dan pembayaran praktis.">
   <meta name="theme-color" content="#ffffff">
   <title><%= title ? `${title} | ${appName}` : appName %></title>
+  <link rel="icon" type="image/png" href="https://athars.space/uploads/da039a1c.png">
+  <link rel="apple-touch-icon" href="https://athars.space/uploads/da039a1c.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://athars.space">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=20260626-profile-dashboard-1">
+  <link rel="stylesheet" href="/css/style.css?v=20260626-brand-logo-1">
 </head>
 <body class="<%= isAdmin ? 'admin-shell' : 'market-shell' %><%= currentUser && !isAdmin ? ' has-mobile-market-nav' : '' %>">
   <%- include('icon-sprite') %>
@@ -18,9 +21,16 @@
 
   <header class="site-header">
     <div class="container nav-wrap">
-      <a class="brand" href="/" aria-label="Beranda TokoZyphra">
-        <span class="brand-mark">Z</span>
-        <span>Toko<span>Zyphra</span></span>
+      <a class="brand brand-header" href="/" aria-label="Beranda TokoZyphra">
+        <img
+          class="brand-logo brand-logo-header"
+          src="https://athars.space/uploads/a3652ac5.png"
+          alt="TokoZyphra"
+          width="1000"
+          height="250"
+          decoding="async"
+          fetchpriority="high"
+        >
       </a>
 
       <nav class="main-nav" aria-label="Navigasi utama desktop">
