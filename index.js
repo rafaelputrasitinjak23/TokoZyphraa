@@ -61,9 +61,9 @@ app.use(methodOverride((req) => {
   return req.query?._method;
 }));
 app.use(express.static(path.join(__dirname, 'public'), {
-  maxAge: config.isProduction ? '7d' : 0,
+  maxAge: config.isProduction ? '1h' : 0,
   etag: true,
-  immutable: config.isProduction
+  immutable: false
 }));
 
 app.get(['/health', '/health/live'], (req, res) => {
