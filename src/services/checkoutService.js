@@ -133,11 +133,8 @@ async function createCheckoutOrder({ userId, cart, voucherCode, useWallet, payme
           fulfillmentContent: item.product.fulfillmentContent || '',
           serialKeyEnabled: Boolean(item.product.serialKeyEnabled),
           digitalAsset: {
-            type: item.product.digitalAssetType || 'none',
-            filePath: item.product.digitalFilePath || '',
+            type: item.product.digitalAssetType === 'url' ? 'url' : 'none',
             fileName: item.product.digitalFileName || '',
-            mimeType: item.product.digitalFileMime || '',
-            fileSize: item.product.digitalFileSize || 0,
             url: item.product.digitalFileUrl || '',
             downloadLimit: item.product.downloadLimit ?? 5,
             downloadCount: 0

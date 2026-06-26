@@ -1,6 +1,6 @@
 # TokoZyphra
 
-TokoZyphra adalah aplikasi e-commerce responsif berbasis Express.js, EJS, dan MongoDB yang berfokus pada penjualan produk digital. Proyek ini menyediakan registrasi OTP email, CAPTCHA, katalog dan keranjang, checkout, voucher, dompet pengguna, pengiriman file atau link digital, serial key, ulasan terverifikasi, dukungan pelanggan, panel administrator, serta pembayaran Pakasir.
+TokoZyphra adalah aplikasi e-commerce responsif berbasis Express.js, EJS, dan MongoDB yang berfokus pada penjualan produk digital. Proyek ini menyediakan registrasi OTP email, CAPTCHA, katalog dan keranjang, checkout, voucher, dompet pengguna, pengiriman URL file digital, serial key, ulasan terverifikasi, dukungan pelanggan, panel administrator, serta pembayaran Pakasir.
 
 ## Fitur Utama
 
@@ -13,7 +13,7 @@ TokoZyphra adalah aplikasi e-commerce responsif berbasis Express.js, EJS, dan Mo
 - Dashboard analitik admin untuk omzet, pertumbuhan, status pesanan, metode pembayaran, dan produk terlaris.
 - Role admin dengan permission per modul tanpa menghilangkan kemampuan akun admin untuk berbelanja.
 - Referral dan loyalty point dengan bonus transaksi pertama serta penukaran poin menjadi saldo.
-- Produk digital dapat memakai upload file privat, link HTTPS, instruksi fulfillment, serial key otomatis, dan batas unduhan.
+- Produk digital menggunakan URL file HTTPS yang disimpan di MongoDB, instruksi fulfillment, serial key otomatis, dan batas akses unduhan.
 - Produk digital, produk gratis, dan produk fisik dengan alamat pengiriman.
 - Voucher persentase atau nominal dengan periode aktif, minimal transaksi, kuota global, dan batas per pengguna.
 - Dompet pengguna, top-up Pakasir, riwayat saldo, penggunaan saldo saat checkout, dan refund pembatalan.
@@ -69,7 +69,6 @@ Gunakan `.env.example` sebagai acuan. Konfigurasi utama:
 - `JOB_SECRET` atau `CRON_SECRET`: secret minimal 32 karakter untuk endpoint rekonsiliasi.
 - `ENABLE_INTERNAL_JOBS`: menjalankan scheduler di dalam proses Node.js.
 - `INTERNAL_JOB_INTERVAL_MINUTES`: interval scheduler internal.
-- `MAX_PRODUCT_FILE_BYTES`: batas ukuran satu file produk digital, default `104857600` atau 100 MB.
 
 Jangan commit `.env` ke repository.
 
@@ -168,9 +167,9 @@ Aplikasi mengekspor instance Express melalui `module.exports = app` pada `index.
 
 ## Penyimpanan Produk Digital
 
-File produk yang diunggah admin disimpan di `private_uploads/products` dan tidak disajikan sebagai static asset. File hanya dapat diunduh melalui endpoint terautentikasi setelah sistem memastikan pesanan milik pengguna telah selesai. Folder `private_uploads` harus dipasang pada persistent storage saat deployment dan disertakan dalam strategi backup.
+Admin memasukkan URL HTTPS file atau halaman unduhan pada formulir produk. URL dan nama file disimpan di MongoDB; aplikasi tidak menerima atau menyimpan binary produk pada filesystem server. Saat pesanan selesai, pembeli membuka URL tersebut melalui endpoint terautentikasi yang memeriksa kepemilikan pesanan dan batas akses sebelum melakukan redirect.
 
-Link produk digital wajib menggunakan HTTPS. Untuk file besar atau deployment serverless, gunakan object storage privat dengan signed URL dan pertahankan pemeriksaan kepemilikan pesanan pada aplikasi.
+Gunakan object storage atau layanan file yang stabil. Untuk aset berbayar, signed URL dengan masa berlaku panjang atau endpoint unduhan privat dari penyedia storage lebih aman daripada URL publik permanen. Perlu diperhatikan bahwa URL tujuan dapat terlihat oleh pembeli setelah redirect.
 
 Serial key disimpan terpisah, diberikan secara atomik saat fulfillment, dan stok produk serial mengikuti jumlah key yang masih tersedia.
 

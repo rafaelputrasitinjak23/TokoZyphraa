@@ -46,14 +46,12 @@ function validateEnvironment() {
     otpResendSeconds: parseInteger('OTP_RESEND_SECONDS', 60, { min: 15, max: 3600 }),
     requireTransactions: parseBoolean('REQUIRE_MONGODB_TRANSACTIONS', isProduction),
     enableInternalJobs: parseBoolean('ENABLE_INTERNAL_JOBS', false),
-    internalJobIntervalMinutes: parseInteger('INTERNAL_JOB_INTERVAL_MINUTES', 5, { min: 1, max: 1440 }),
-    maxProductFileBytes: parseInteger('MAX_PRODUCT_FILE_BYTES', 100 * 1024 * 1024, { min: 1024, max: 1024 * 1024 * 1024 })
+    internalJobIntervalMinutes: parseInteger('INTERNAL_JOB_INTERVAL_MINUTES', 5, { min: 1, max: 1440 })
   };
 
   process.env.REQUIRE_MONGODB_TRANSACTIONS = String(config.requireTransactions);
   process.env.OTP_TTL_MINUTES = String(config.otpTtlMinutes);
   process.env.OTP_RESEND_SECONDS = String(config.otpResendSeconds);
-  process.env.MAX_PRODUCT_FILE_BYTES = String(config.maxProductFileBytes);
 
   const secretCandidates = [process.env.JOB_SECRET, process.env.CRON_SECRET].filter(Boolean);
   const jobSecret = secretCandidates.find((value) => !isPlaceholder(value)) || secretCandidates[0] || '';

@@ -1,8 +1,8 @@
 <%- include('../../partials/header') %>
 <section class="section page-section">
   <div class="container narrow-wide">
-    <div class="admin-heading"><div><span class="eyebrow">ADMIN / PRODUK</span><h1><%= product ? 'Edit Produk' : 'Tambah Produk' %></h1><p>Kelola katalog, file digital, link unduhan, dan serial key.</p></div></div>
-    <form method="post" action="<%= action %>" enctype="multipart/form-data" class="form-card glass-card form-grid" data-disable-on-submit>
+    <div class="admin-heading"><div><span class="eyebrow">ADMIN / PRODUK</span><h1><%= product ? 'Edit Produk' : 'Tambah Produk' %></h1><p>Kelola katalog, URL unduhan digital, dan serial key.</p></div></div>
+    <form method="post" action="<%= action %>" class="form-card glass-card form-grid" data-disable-on-submit>
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <label>Nama produk<input type="text" name="name" required maxlength="140" value="<%= product?.name || '' %>"></label>
       <label>Slug URL<input type="text" name="slug" maxlength="160" value="<%= product?.slug || '' %>" placeholder="otomatis dari nama"></label>
@@ -18,13 +18,12 @@
       <fieldset class="full digital-product-fields" data-digital-fields>
         <legend>Akses produk digital</legend>
         <div class="form-grid">
-          <label class="full">Upload file produk<input type="file" name="digitalFile"><small>Maksimal sesuai MAX_PRODUCT_FILE_BYTES, default 100 MB. File disimpan di penyimpanan privat.</small></label>
-          <label class="full">Atau link file HTTPS<input type="url" name="digitalFileUrl" maxlength="2000" value="<%= product?.digitalAssetType === 'url' ? product.digitalFileUrl : '' %>" placeholder="https://drive.example.com/file"></label>
-          <label>Nama file/link<input type="text" name="digitalFileName" maxlength="255" value="<%= product?.digitalFileName || '' %>" placeholder="Produk digital.zip"></label>
+          <label class="full">URL file produk digital<input type="url" name="digitalFileUrl" maxlength="2000" value="<%= product?.digitalAssetType === 'url' ? product.digitalFileUrl : '' %>" placeholder="https://domain-penyimpanan.com/file-produk.zip"><small>Masukkan URL HTTPS file atau halaman unduhan. URL disimpan di MongoDB dan hanya dapat dibuka pembeli melalui halaman pesanan selesai.</small></label>
+          <label>Nama tombol/file<input type="text" name="digitalFileName" maxlength="255" value="<%= product?.digitalFileName || '' %>" placeholder="Unduh Produk Digital"></label>
           <label>Batas unduhan<input type="number" name="downloadLimit" min="0" max="1000" value="<%= product?.downloadLimit ?? 5 %>"><small>Gunakan 0 untuk tanpa batas.</small></label>
           <% if (product?.digitalAssetType && product.digitalAssetType !== 'none') { %>
-            <div class="full current-digital-asset"><strong>Aset saat ini:</strong> <%= product.digitalAssetType === 'local' ? product.digitalFileName : product.digitalFileUrl %></div>
-            <label class="check-row full"><input type="checkbox" name="removeDigitalAsset"><span>Hapus akses file/link saat ini</span></label>
+            <div class="full current-digital-asset"><strong>URL saat ini:</strong> <%= product.digitalFileUrl %></div>
+            <label class="check-row full"><input type="checkbox" name="removeDigitalAsset"><span>Hapus URL unduhan saat ini</span></label>
           <% } %>
           <label class="check-row full"><input type="checkbox" name="serialKeyEnabled" <%= product?.serialKeyEnabled ? 'checked' : '' %>><span>Produk menggunakan serial key otomatis</span></label>
           <label class="full">Konten/instruksi setelah pembelian<textarea name="fulfillmentContent" rows="5" maxlength="8000" placeholder="Petunjuk instalasi, cara aktivasi, atau informasi akses tambahan"><%= product?.fulfillmentContent || '' %></textarea></label>

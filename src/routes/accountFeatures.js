@@ -1,5 +1,3 @@
-const fs = require('fs');
-const path = require('path');
 const crypto = require('crypto');
 const express = require('express');
 const mongoose = require('mongoose');
@@ -22,8 +20,6 @@ const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
 const PAGE_SIZE = 20;
-const projectRoot = path.resolve(__dirname, '../..');
-const privateRoot = path.resolve(projectRoot, 'private_uploads/products');
 
 router.use(noStore);
 router.use(requireUser);
@@ -223,24 +219,18 @@ router.get('/downloads/:orderNumber/:itemIndex', asyncHandler(async (req, res) =
     status: 'completed'
   }).lean();
   const item = order?.items?.[itemIndex];
-  if (!order || !item || item.deliveryType !== 'digital' || !['local', 'url'].includes(item.digitalAsset?.type)) {
-    return res.status(404).render('error', { title: 'File Tidak Ditemukan', status: 404, message: 'File digital tidak tersedia untuk pesanan ini.' });
+  if (!order || !item || item.deliveryType !== 'digital' || item.digitalAsset?.type !== 'url') {
+    return res.status(404).render('error', { title: 'File Tidak Ditemukan', status: 404, message: 'Link produk digital tidak tersedia untuk pesanan ini.' });
   }
 
-  let targetUrl = null;
-  let absolutePath = null;
-  if (item.digitalAsset.type === 'url') {
-    try {
-      targetUrl = new URL(item.digitalAsset.url);
-    } catch (_) {
-      return res.status(404).render('error', { title: 'Link Tidak Valid', status: 404, message: 'Link produk digital tidak tersedia.' });
-    }
-    if (targetUrl.protocol !== 'https:') return res.sendStatus(403);
-  } else {
-    absolutePath = path.resolve(projectRoot, item.digitalAsset.filePath || '');
-    if (!absolutePath.startsWith(`${privateRoot}${path.sep}`) || !fs.existsSync(absolutePath) || !fs.statSync(absolutePath).isFile()) {
-      return res.status(404).render('error', { title: 'File Tidak Ditemukan', status: 404, message: 'File digital tidak tersedia di penyimpanan server.' });
-    }
+  let targetUrl;
+  try {
+    targetUrl = new URL(item.digitalAsset.url);
+  } catch (_) {
+    return res.status(404).render('error', { title: 'Link Tidak Valid', status: 404, message: 'Link produk digital tidak tersedia.' });
+  }
+  if (targetUrl.protocol !== 'https:' || targetUrl.username || targetUrl.password) {
+    return res.status(403).render('error', { title: 'Link Tidak Diizinkan', status: 403, message: 'Link produk digital tidak memenuhi persyaratan keamanan.' });
   }
 
   const limit = Number(item.digitalAsset.downloadLimit || 0);
@@ -258,12 +248,11 @@ router.get('/downloads/:orderNumber/:itemIndex', asyncHandler(async (req, res) =
     return res.status(403).render('error', { title: 'Batas Unduhan Tercapai', status: 403, message: 'Batas unduhan produk digital ini telah tercapai. Buat tiket bantuan jika Anda memerlukan akses kembali.' });
   }
 
-  if (targetUrl) return res.redirect(targetUrl.toString());
   res.set({
     'Cache-Control': 'private, no-store',
-    'X-Content-Type-Options': 'nosniff'
+    'Referrer-Policy': 'no-referrer'
   });
-  return res.download(absolutePath, item.digitalAsset.fileName || path.basename(absolutePath));
+  return res.redirect(targetUrl.toString());
 }));
 
 router.get('/loyalty/history', asyncHandler(async (req, res) => {

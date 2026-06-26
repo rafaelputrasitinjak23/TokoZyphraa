@@ -7,11 +7,8 @@ const integerMoney = {
 };
 
 const digitalAssetSchema = new mongoose.Schema({
-  type: { type: String, enum: ['none', 'local', 'url'], default: 'none' },
-  filePath: { type: String, default: '', maxlength: 1000 },
+  type: { type: String, enum: ['none', 'url'], default: 'none' },
   fileName: { type: String, default: '', maxlength: 255 },
-  mimeType: { type: String, default: '', maxlength: 160 },
-  fileSize: { ...integerMoney, default: 0 },
   url: { type: String, default: '', maxlength: 2000 },
   downloadLimit: { type: Number, default: 5, min: 0, max: 1000 },
   downloadCount: { type: Number, default: 0, min: 0 },

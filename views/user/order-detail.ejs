@@ -22,8 +22,8 @@
                     <% if (item.serialKeys?.length) { %>
                       <div class="serial-key-list"><span>Serial key</span><% item.serialKeys.forEach((serial) => { %><code><%= serial %></code><% }) %></div>
                     <% } %>
-                    <% if (item.digitalAsset && ['local', 'url'].includes(item.digitalAsset.type)) { %>
-                      <a class="btn btn-primary btn-sm btn-icon-label" href="/account/downloads/<%= order.orderNumber %>/<%= itemIndex %>"><svg class="svg-icon" aria-hidden="true"><use href="#icon-download"></use></svg><span><%= item.digitalAsset.type === 'url' ? 'Buka File Digital' : 'Unduh File Digital' %></span></a>
+                    <% if (item.digitalAsset?.type === 'url') { %>
+                      <a class="btn btn-primary btn-sm btn-icon-label" href="/account/downloads/<%= order.orderNumber %>/<%= itemIndex %>"><svg class="svg-icon" aria-hidden="true"><use href="#icon-download"></use></svg><span>Unduh File Digital</span></a>
                       <small><%= item.digitalAsset.downloadLimit > 0 ? `${item.digitalAsset.downloadCount || 0}/${item.digitalAsset.downloadLimit} akses digunakan` : 'Unduhan tanpa batas' %></small>
                     <% } %>
                   </div>

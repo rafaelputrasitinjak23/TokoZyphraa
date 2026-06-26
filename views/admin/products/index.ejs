@@ -1,12 +1,12 @@
 <%- include('../../partials/header') %>
 <section class="section page-section">
   <div class="container">
-    <div class="admin-heading"><div><span class="eyebrow">ADMIN / PRODUK</span><h1>Kelola Produk Digital</h1><p>Atur katalog, file unduhan, link, stok, dan serial key.</p></div><a class="btn btn-primary" href="/admin/products/new">+ Tambah Produk</a></div>
+    <div class="admin-heading"><div><span class="eyebrow">ADMIN / PRODUK</span><h1>Kelola Produk Digital</h1><p>Atur katalog, URL file digital, stok, dan serial key.</p></div><a class="btn btn-primary" href="/admin/products/new">+ Tambah Produk</a></div>
     <div class="table-card glass-card"><div class="responsive-table"><table><thead><tr><th>Produk</th><th>Akses digital</th><th>Harga</th><th>Stok</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
       <% products.forEach((product) => { %>
         <tr>
           <td><div class="table-product"><img src="<%= product.imageUrl || '/images/product-placeholder.svg' %>" alt=""><div><strong><%= product.name %></strong><small><%= product.category %> · /<%= product.slug %></small></div></div></td>
-          <td><div class="product-delivery-badges"><span class="status-pill"><%= product.deliveryType %></span><% if (product.digitalAssetType === 'local') { %><span class="status-pill status-completed">file</span><% } %><% if (product.digitalAssetType === 'url') { %><span class="status-pill status-paid">link</span><% } %><% if (product.serialKeyEnabled) { %><span class="status-pill role-admin">serial</span><% } %></div></td>
+          <td><div class="product-delivery-badges"><span class="status-pill"><%= product.deliveryType %></span><% if (product.digitalAssetType === 'url') { %><span class="status-pill status-paid">URL file</span><% } %><% if (product.serialKeyEnabled) { %><span class="status-pill role-admin">serial</span><% } %></div></td>
           <td><%= formatRupiah(product.price) %><small class="table-sub"><%= product.isFlashSale ? 'Flash Sale' : product.discountPercent ? `${product.discountPercent}% diskon` : 'Harga normal' %></small></td>
           <td><%= product.stock %><small class="table-sub"><%= product.soldCount %> terjual</small></td>
           <td><span class="status-pill <%= product.isActive ? 'status-completed' : 'status-cancelled' %>"><%= product.isActive ? 'aktif' : 'nonaktif' %></span></td>

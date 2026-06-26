@@ -1,5 +1,4 @@
 const express = require('express');
-const path = require('path');
 const crypto = require('crypto');
 const slugify = require('slugify');
 const User = require('../models/User');
@@ -14,7 +13,6 @@ const SupportTicket = require('../models/SupportTicket');
 const { requireAdmin, requirePermission } = require('../middleware/auth');
 const noStore = require('../middleware/noStore');
 const { verifyCsrfRequest } = require('../middleware/common');
-const { productAssetUpload, removeUploadedFile } = require('../middleware/productUpload');
 const { completeOrder } = require('../services/orderFulfillment');
 const { cancelPendingOrderSafely } = require('../services/orderCancellation');
 const { adjustWallet } = require('../services/walletService');
@@ -67,7 +65,7 @@ function normalizeDigitalUrl(value) {
   throw error;
 }
 
-function productPayload(body, file = null, existingProduct = null) {
+function productPayload(body, existingProduct = null) {
   const name = String(body.name || '').trim();
   const slug = slugify(body.slug || name, { lower: true, strict: true, locale: 'id' });
   const description = String(body.description || '').trim();
@@ -76,6 +74,7 @@ function productPayload(body, file = null, existingProduct = null) {
     error.status = 400;
     throw error;
   }
+
   const deliveryType = body.deliveryType === 'physical' ? 'physical' : 'digital';
   const serialKeyEnabled = deliveryType === 'digital' && checkbox(body.serialKeyEnabled);
   const payload = {
@@ -101,6 +100,7 @@ function productPayload(body, file = null, existingProduct = null) {
     downloadLimit: parseInteger(body.downloadLimit || 5, { name: 'Batas unduhan', min: 0, max: 1000 }),
     serialKeyEnabled
   };
+
   if (payload.shortDescription.length > 220 || payload.category.length > 60 || payload.fulfillmentContent.length > 8000) {
     const error = new Error('Deskripsi singkat, kategori, atau konten fulfillment terlalu panjang.');
     error.status = 400;
@@ -114,47 +114,20 @@ function productPayload(body, file = null, existingProduct = null) {
     }
   }
 
-  const removeAsset = checkbox(body.removeDigitalAsset);
-  if (deliveryType === 'physical' || removeAsset) {
-    Object.assign(payload, {
-      digitalAssetType: 'none',
-      digitalFilePath: '',
-      digitalFileName: '',
-      digitalFileMime: '',
-      digitalFileSize: 0,
-      digitalFileUrl: ''
-    });
-  } else if (file) {
-    Object.assign(payload, {
-      digitalAssetType: 'local',
-      digitalFilePath: path.relative(path.resolve(__dirname, '../..'), file.path).replace(/\\/g, '/'),
-      digitalFileName: String(file.originalname || 'produk-digital').slice(0, 255),
-      digitalFileMime: String(file.mimetype || 'application/octet-stream').slice(0, 160),
-      digitalFileSize: file.size,
-      digitalFileUrl: ''
-    });
-  } else {
-    const digitalFileUrl = normalizeDigitalUrl(body.digitalFileUrl);
-    if (digitalFileUrl) {
-      Object.assign(payload, {
-        digitalAssetType: 'url',
-        digitalFilePath: '',
-        digitalFileName: String(body.digitalFileName || existingProduct?.digitalFileName || 'Unduh produk').trim().slice(0, 255),
-        digitalFileMime: '',
-        digitalFileSize: 0,
-        digitalFileUrl
-      });
-    } else if (existingProduct) {
-      Object.assign(payload, {
-        digitalAssetType: existingProduct.digitalAssetType || 'none',
-        digitalFilePath: existingProduct.digitalFilePath || '',
-        digitalFileName: existingProduct.digitalFileName || '',
-        digitalFileMime: existingProduct.digitalFileMime || '',
-        digitalFileSize: existingProduct.digitalFileSize || 0,
-        digitalFileUrl: existingProduct.digitalFileUrl || ''
-      });
-    }
-  }
+  const removeAsset = deliveryType === 'physical' || checkbox(body.removeDigitalAsset);
+  const submittedUrl = removeAsset ? '' : normalizeDigitalUrl(body.digitalFileUrl);
+  const existingUrl = existingProduct?.digitalAssetType === 'url' ? existingProduct.digitalFileUrl : '';
+  const digitalFileUrl = submittedUrl || (removeAsset ? '' : existingUrl);
+  const digitalFileName = digitalFileUrl
+    ? String(body.digitalFileName || existingProduct?.digitalFileName || 'Unduh produk').trim().slice(0, 255)
+    : '';
+
+  Object.assign(payload, {
+    digitalAssetType: digitalFileUrl ? 'url' : 'none',
+    digitalFileName,
+    digitalFileUrl
+  });
+
   return payload;
 }
 
@@ -323,18 +296,12 @@ router.get('/products/new', requirePermission('products'), (req, res) => res.ren
 router.post(
   '/products',
   requirePermission('products'),
-  productAssetUpload.single('digitalFile'),
   verifyCsrfRequest,
   asyncHandler(async (req, res) => {
-    try {
-      const product = await Product.create(productPayload(req.body, req.file));
-      await audit(req, 'product.create', 'Product', product._id, { name: product.name, digitalAssetType: product.digitalAssetType });
-      req.flash('success', 'Produk berhasil ditambahkan.');
-      res.redirect('/admin/products');
-    } catch (error) {
-      removeUploadedFile(req.file);
-      throw error;
-    }
+    const product = await Product.create(productPayload(req.body));
+    await audit(req, 'product.create', 'Product', product._id, { name: product.name, digitalAssetType: product.digitalAssetType });
+    req.flash('success', 'Produk berhasil ditambahkan.');
+    res.redirect('/admin/products');
   })
 );
 
@@ -347,29 +314,21 @@ router.get('/products/:id/edit', requirePermission('products'), asyncHandler(asy
 router.put(
   '/products/:id',
   requirePermission('products'),
-  productAssetUpload.single('digitalFile'),
   verifyCsrfRequest,
   asyncHandler(async (req, res) => {
     const existing = await Product.findById(req.params.id);
-    if (!existing) {
-      removeUploadedFile(req.file);
-      return res.sendStatus(404);
+    if (!existing) return res.sendStatus(404);
+
+    const payload = productPayload(req.body, existing);
+    const product = await Product.findByIdAndUpdate(req.params.id, payload, { new: true, runValidators: true });
+    if (product.serialKeyEnabled) {
+      const SerialKey = require('../models/SerialKey');
+      product.stock = await SerialKey.countDocuments({ product: product._id, status: 'available' });
+      await product.save();
     }
-    try {
-      const payload = productPayload(req.body, req.file, existing);
-      const product = await Product.findByIdAndUpdate(req.params.id, payload, { new: true, runValidators: true });
-      if (product.serialKeyEnabled) {
-        const SerialKey = require('../models/SerialKey');
-        product.stock = await SerialKey.countDocuments({ product: product._id, status: 'available' });
-        await product.save();
-      }
-      await audit(req, 'product.update', 'Product', product._id, { name: product.name, digitalAssetType: product.digitalAssetType });
-      req.flash('success', 'Produk berhasil diperbarui.');
-      res.redirect('/admin/products');
-    } catch (error) {
-      removeUploadedFile(req.file);
-      throw error;
-    }
+    await audit(req, 'product.update', 'Product', product._id, { name: product.name, digitalAssetType: product.digitalAssetType });
+    req.flash('success', 'Produk berhasil diperbarui.');
+    res.redirect('/admin/products');
   })
 );
 

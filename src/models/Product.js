@@ -31,11 +31,8 @@ const productSchema = new mongoose.Schema({
   flashSaleEnd: { type: Date, default: null },
   deliveryType: { type: String, enum: ['digital', 'physical'], default: 'digital' },
   fulfillmentContent: { type: String, default: '', maxlength: 8000 },
-  digitalAssetType: { type: String, enum: ['none', 'local', 'url'], default: 'none' },
-  digitalFilePath: { type: String, default: '', maxlength: 1000 },
+  digitalAssetType: { type: String, enum: ['none', 'url'], default: 'none' },
   digitalFileName: { type: String, default: '', maxlength: 255 },
-  digitalFileMime: { type: String, default: '', maxlength: 160 },
-  digitalFileSize: { ...integerMoney, default: 0 },
   digitalFileUrl: { type: String, default: '', maxlength: 2000 },
   downloadLimit: {
     type: Number,
