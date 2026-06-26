@@ -7,6 +7,7 @@ const { MAX_CART_QUANTITY, MAX_CART_ITEMS } = require('../constants/limits');
 const { calculateProductPrice, makeOrderNumber } = require('../utils/order');
 const { reserveVoucher } = require('../utils/voucher');
 const { withMongoTransaction } = require('../utils/transaction');
+const { notifyOrderCreated, notifyAdmins } = require('./notificationService');
 
 function normalizeCart(cart) {
   const merged = new Map();
@@ -129,7 +130,18 @@ async function createCheckoutOrder({ userId, cart, voucherCode, useWallet, payme
           quantity: item.quantity,
           lineTotal: item.lineTotal,
           deliveryType: item.product.deliveryType,
-          fulfillmentContent: item.product.fulfillmentContent || ''
+          fulfillmentContent: item.product.fulfillmentContent || '',
+          serialKeyEnabled: Boolean(item.product.serialKeyEnabled),
+          digitalAsset: {
+            type: item.product.digitalAssetType || 'none',
+            filePath: item.product.digitalFilePath || '',
+            fileName: item.product.digitalFileName || '',
+            mimeType: item.product.digitalFileMime || '',
+            fileSize: item.product.digitalFileSize || 0,
+            url: item.product.digitalFileUrl || '',
+            downloadLimit: item.product.downloadLimit ?? 5,
+            downloadCount: 0
+          }
         })),
         shippingAddress,
         subtotal,
@@ -155,6 +167,16 @@ async function createCheckoutOrder({ userId, cart, voucherCode, useWallet, payme
         }], { session });
       }
 
+      await notifyOrderCreated(order, session);
+      await notifyAdmins({
+        type: 'order',
+        adminPermission: 'orders',
+        title: 'Pesanan baru',
+        message: `${order.orderNumber} dibuat dengan total ${subtotal}.`,
+        link: '/admin/orders',
+        idempotencyKey: `order-created-admin:${order.orderNumber}`,
+        metadata: { orderNumber: order.orderNumber, subtotal }
+      }, session);
       return { order, created: true };
     });
   } catch (error) {

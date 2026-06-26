@@ -17,7 +17,9 @@ const authRoutes = require('./src/routes/auth');
 const cartRoutes = require('./src/routes/cart');
 const checkoutRoutes = require('./src/routes/checkout');
 const userRoutes = require('./src/routes/user');
+const accountFeatureRoutes = require('./src/routes/accountFeatures');
 const adminRoutes = require('./src/routes/admin');
+const adminFeatureRoutes = require('./src/routes/adminFeatures');
 const webhookRoutes = require('./src/routes/webhook');
 const internalRoutes = require('./src/routes/internal');
 const { startScheduler } = require('./src/jobs/scheduler');
@@ -117,7 +119,9 @@ app.use('/auth', authRoutes);
 app.use('/cart', cartRoutes);
 app.use('/checkout', checkoutRoutes);
 app.use('/account', userRoutes);
+app.use('/account', accountFeatureRoutes);
 app.use('/admin', adminRoutes);
+app.use('/admin', adminFeatureRoutes);
 
 app.use((req, res) => {
   res.status(404).render('error', {
@@ -133,6 +137,14 @@ app.use((error, req, res, next) => {
 
   let status = Number.isInteger(error.status) ? error.status : 500;
   let message = error.message || 'Terjadi kesalahan pada server.';
+  if (error.code === 'LIMIT_FILE_SIZE') {
+    status = 413;
+    message = 'Ukuran file produk digital melebihi batas yang diizinkan.';
+  }
+  if (error.code === 'LIMIT_FILE_COUNT' || error.code === 'LIMIT_UNEXPECTED_FILE') {
+    status = 400;
+    message = 'File produk digital yang dikirim tidak valid.';
+  }
   if (error.name === 'CastError' || error.name === 'ValidationError') status = 400;
   if (error.code === 11000) {
     status = 409;

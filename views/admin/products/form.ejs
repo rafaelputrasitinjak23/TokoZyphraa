@@ -1,4 +1,46 @@
 <%- include('../../partials/header') %>
-<section class="section page-section"><div class="container narrow-wide"><div class="section-heading"><div><span class="eyebrow">ADMIN / PRODUK</span><h1><%= product ? 'Edit Produk' : 'Tambah Produk' %></h1></div></div><form method="post" action="<%= action %>" class="form-card glass-card form-grid"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
-<label>Nama produk<input type="text" name="name" required maxlength="140" value="<%= product?.name || '' %>"></label><label>Slug URL<input type="text" name="slug" maxlength="160" value="<%= product?.slug || '' %>" placeholder="otomatis dari nama"></label><label class="full">Deskripsi singkat<input type="text" name="shortDescription" maxlength="220" value="<%= product?.shortDescription || '' %>"></label><label class="full">Deskripsi lengkap<textarea name="description" required rows="8" maxlength="8000"><%= product?.description || '' %></textarea></label><label>Kategori<input type="text" name="category" value="<%= product?.category || 'Umum' %>"></label><label>URL gambar<input type="text" name="imageUrl" value="<%= product?.imageUrl || '/images/product-placeholder.svg' %>"></label><label>Harga<input type="number" name="price" min="0" required value="<%= product?.price ?? 0 %>"></label><label>Diskon (%)<input type="number" name="discountPercent" min="0" max="100" value="<%= product?.discountPercent ?? 0 %>"></label><label>Stok<input type="number" name="stock" min="0" value="<%= product?.stock ?? 0 %>"></label><label>Tipe pengiriman<select name="deliveryType"><option value="digital" <%= product?.deliveryType !== 'physical' ? 'selected' : '' %>>Digital</option><option value="physical" <%= product?.deliveryType === 'physical' ? 'selected' : '' %>>Fisik</option></select></label><label>Harga flash sale<input type="number" name="flashSalePrice" min="0" value="<%= product?.flashSalePrice ?? '' %>"></label><label>Mulai flash sale<input type="datetime-local" name="flashSaleStart" value="<%= product?.flashSaleStart ? new Date(product.flashSaleStart).toISOString().slice(0,16) : '' %>"></label><label>Selesai flash sale<input type="datetime-local" name="flashSaleEnd" value="<%= product?.flashSaleEnd ? new Date(product.flashSaleEnd).toISOString().slice(0,16) : '' %>"></label><label class="full">Konten pemenuhan produk digital<textarea name="fulfillmentContent" rows="5" maxlength="8000" placeholder="Kode lisensi, tautan akses, atau instruksi yang hanya terlihat setelah pesanan selesai"><%= product?.fulfillmentContent || '' %></textarea></label><div class="full check-group"><label class="check-row"><input type="checkbox" name="isActive" <%= product ? (product.isActive ? 'checked' : '') : 'checked' %>><span>Produk aktif</span></label><label class="check-row"><input type="checkbox" name="isFeatured" <%= product?.isFeatured ? 'checked' : '' %>><span>Produk unggulan</span></label><label class="check-row"><input type="checkbox" name="isFlashSale" <%= product?.isFlashSale ? 'checked' : '' %>><span>Aktifkan flash sale</span></label></div><div class="full action-row"><button class="btn btn-primary" type="submit">Simpan Produk</button><a class="btn btn-ghost" href="/admin/products">Batal</a></div></form></div></section>
+<section class="section page-section">
+  <div class="container narrow-wide">
+    <div class="admin-heading"><div><span class="eyebrow">ADMIN / PRODUK</span><h1><%= product ? 'Edit Produk' : 'Tambah Produk' %></h1><p>Kelola katalog, file digital, link unduhan, dan serial key.</p></div></div>
+    <form method="post" action="<%= action %>" enctype="multipart/form-data" class="form-card glass-card form-grid" data-disable-on-submit>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <label>Nama produk<input type="text" name="name" required maxlength="140" value="<%= product?.name || '' %>"></label>
+      <label>Slug URL<input type="text" name="slug" maxlength="160" value="<%= product?.slug || '' %>" placeholder="otomatis dari nama"></label>
+      <label class="full">Deskripsi singkat<input type="text" name="shortDescription" maxlength="220" value="<%= product?.shortDescription || '' %>"></label>
+      <label class="full">Deskripsi lengkap<textarea name="description" required rows="8" maxlength="8000"><%= product?.description || '' %></textarea></label>
+      <label>Kategori<input type="text" name="category" maxlength="60" value="<%= product?.category || 'Umum' %>"></label>
+      <label>URL gambar<input type="text" name="imageUrl" maxlength="2000" value="<%= product?.imageUrl || '/images/product-placeholder.svg' %>"></label>
+      <label>Harga<input type="number" name="price" min="0" max="1000000000" required value="<%= product?.price ?? 0 %>"></label>
+      <label>Diskon (%)<input type="number" name="discountPercent" min="0" max="100" value="<%= product?.discountPercent ?? 0 %>"></label>
+      <label>Stok<input type="number" name="stock" min="0" max="100000000" value="<%= product?.stock ?? 0 %>" <%= product?.serialKeyEnabled ? 'readonly' : '' %>><small>Untuk produk serial key, stok mengikuti jumlah key tersedia.</small></label>
+      <label>Tipe pengiriman<select name="deliveryType" data-delivery-type><option value="digital" <%= product?.deliveryType !== 'physical' ? 'selected' : '' %>>Digital</option><option value="physical" <%= product?.deliveryType === 'physical' ? 'selected' : '' %>>Fisik</option></select></label>
+
+      <fieldset class="full digital-product-fields" data-digital-fields>
+        <legend>Akses produk digital</legend>
+        <div class="form-grid">
+          <label class="full">Upload file produk<input type="file" name="digitalFile"><small>Maksimal sesuai MAX_PRODUCT_FILE_BYTES, default 100 MB. File disimpan di penyimpanan privat.</small></label>
+          <label class="full">Atau link file HTTPS<input type="url" name="digitalFileUrl" maxlength="2000" value="<%= product?.digitalAssetType === 'url' ? product.digitalFileUrl : '' %>" placeholder="https://drive.example.com/file"></label>
+          <label>Nama file/link<input type="text" name="digitalFileName" maxlength="255" value="<%= product?.digitalFileName || '' %>" placeholder="Produk digital.zip"></label>
+          <label>Batas unduhan<input type="number" name="downloadLimit" min="0" max="1000" value="<%= product?.downloadLimit ?? 5 %>"><small>Gunakan 0 untuk tanpa batas.</small></label>
+          <% if (product?.digitalAssetType && product.digitalAssetType !== 'none') { %>
+            <div class="full current-digital-asset"><strong>Aset saat ini:</strong> <%= product.digitalAssetType === 'local' ? product.digitalFileName : product.digitalFileUrl %></div>
+            <label class="check-row full"><input type="checkbox" name="removeDigitalAsset"><span>Hapus akses file/link saat ini</span></label>
+          <% } %>
+          <label class="check-row full"><input type="checkbox" name="serialKeyEnabled" <%= product?.serialKeyEnabled ? 'checked' : '' %>><span>Produk menggunakan serial key otomatis</span></label>
+          <label class="full">Konten/instruksi setelah pembelian<textarea name="fulfillmentContent" rows="5" maxlength="8000" placeholder="Petunjuk instalasi, cara aktivasi, atau informasi akses tambahan"><%= product?.fulfillmentContent || '' %></textarea></label>
+        </div>
+      </fieldset>
+
+      <label>Harga flash sale<input type="number" name="flashSalePrice" min="0" value="<%= product?.flashSalePrice ?? '' %>"></label>
+      <label>Mulai flash sale<input type="datetime-local" name="flashSaleStart" value="<%= product?.flashSaleStart ? new Date(product.flashSaleStart).toISOString().slice(0,16) : '' %>"></label>
+      <label>Selesai flash sale<input type="datetime-local" name="flashSaleEnd" value="<%= product?.flashSaleEnd ? new Date(product.flashSaleEnd).toISOString().slice(0,16) : '' %>"></label>
+      <div class="full check-group">
+        <label class="check-row"><input type="checkbox" name="isActive" <%= product ? (product.isActive ? 'checked' : '') : 'checked' %>><span>Produk aktif</span></label>
+        <label class="check-row"><input type="checkbox" name="isFeatured" <%= product?.isFeatured ? 'checked' : '' %>><span>Produk unggulan</span></label>
+        <label class="check-row"><input type="checkbox" name="isFlashSale" <%= product?.isFlashSale ? 'checked' : '' %>><span>Aktifkan flash sale</span></label>
+      </div>
+      <div class="full action-row"><button class="btn btn-primary" type="submit">Simpan Produk</button><a class="btn btn-ghost" href="/admin/products">Batal</a><% if (product?.serialKeyEnabled) { %><a class="btn btn-ghost" href="/admin/products/<%= product._id %>/serial-keys">Kelola Serial Key</a><% } %></div>
+    </form>
+  </div>
+</section>
 <%- include('../../partials/footer') %>

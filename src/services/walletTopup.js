@@ -2,6 +2,7 @@ const User = require('../models/User');
 const WalletTopup = require('../models/WalletTopup');
 const WalletTransaction = require('../models/WalletTransaction');
 const { withMongoTransaction } = require('../utils/transaction');
+const { notifyWalletTopup } = require('./notificationService');
 
 function transactionKey(topupNumber) {
   return `topup:${topupNumber}`;
@@ -22,6 +23,7 @@ async function completeWalletTopup(topupOrId, completedAt = new Date()) {
       topup.creditedAt ||= existing.createdAt || completedAt;
       topup.paymentSetupStatus = 'ready';
       await topup.save({ session });
+      await notifyWalletTopup(topup, session);
       return topup;
     }
 
@@ -55,6 +57,7 @@ async function completeWalletTopup(topupOrId, completedAt = new Date()) {
     topup.creditedAt = completedAt;
     topup.paymentSetupStatus = 'ready';
     await topup.save({ session });
+    await notifyWalletTopup(topup, session);
     return topup;
   });
 }

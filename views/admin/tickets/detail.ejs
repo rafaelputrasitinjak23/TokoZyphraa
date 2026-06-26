@@ -1,0 +1,24 @@
+<%- include('../../partials/header') %>
+<section class="section page-section">
+  <div class="container narrow-wide">
+    <div class="section-heading"><div><span class="eyebrow"><%= ticket.ticketNumber %></span><h1><%= ticket.subject %></h1><p><%= ticket.user?.name %> · <%= ticket.user?.email %><%= ticket.order?.orderNumber ? ` · ${ticket.order.orderNumber}` : '' %></p></div><a class="btn btn-ghost" href="/admin/tickets">Kembali</a></div>
+    <div class="admin-ticket-layout">
+      <div>
+        <div class="conversation-card glass-card">
+          <% messages.forEach((message) => { %><article class="conversation-message <%= message.senderRole === 'admin' ? 'admin-message' : 'user-message' %>"><header><strong><%= message.sender?.name || 'Pengguna' %></strong><span><%= message.senderRole %> · <%= formatDate(message.createdAt) %></span></header><div class="preline"><%= message.message %></div></article><% }) %>
+        </div>
+        <% if (ticket.status !== 'closed') { %><form method="post" action="/admin/tickets/<%= ticket.ticketNumber %>/messages" class="form-card glass-card form-stack"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><label>Balasan admin<textarea name="message" maxlength="4000" rows="6" required></textarea></label><button class="btn btn-primary" type="submit">Kirim Balasan</button></form><% } %>
+      </div>
+      <aside class="summary-card glass-card">
+        <h2>Pengaturan Tiket</h2>
+        <form method="post" action="/admin/tickets/<%= ticket.ticketNumber %>/status" class="form-stack">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <label>Status<select name="status"><% ['open','in_progress','resolved','closed'].forEach((status) => { %><option value="<%= status %>" <%= ticket.status === status ? 'selected' : '' %>><%= status %></option><% }) %></select></label>
+          <label>Prioritas<select name="priority"><% ['low','normal','high','urgent'].forEach((priority) => { %><option value="<%= priority %>" <%= ticket.priority === priority ? 'selected' : '' %>><%= priority %></option><% }) %></select></label>
+          <button class="btn btn-primary" type="submit">Perbarui Tiket</button>
+        </form>
+      </aside>
+    </div>
+  </div>
+</section>
+<%- include('../../partials/footer') %>

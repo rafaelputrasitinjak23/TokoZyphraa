@@ -1,0 +1,17 @@
+<%- include('../partials/header') %>
+<section class="section page-section">
+  <div class="container narrow">
+    <div class="form-card glass-card">
+      <span class="eyebrow">BANTUAN</span><h1>Buat Tiket Baru</h1><p>Jelaskan masalah secara rinci agar admin dapat membantu lebih cepat.</p>
+      <form method="post" action="/account/tickets" class="form-stack">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <label>Kategori<select name="category" required><option value="product">Produk</option><option value="payment">Pembayaran</option><option value="refund">Refund</option><option value="download">File atau unduhan</option><option value="account">Akun</option><option value="other">Lainnya</option></select></label>
+        <label>Pesanan terkait <span class="optional-label">opsional</span><select name="orderNumber"><option value="">Tanpa pesanan</option><% orders.forEach((order) => { %><option value="<%= order.orderNumber %>" <%= selectedOrder === order.orderNumber ? 'selected' : '' %>><%= order.orderNumber %> · <%= order.status %></option><% }) %></select></label>
+        <label>Subjek<input type="text" name="subject" minlength="5" maxlength="160" required placeholder="Ringkasan masalah"></label>
+        <label>Pesan<textarea name="message" minlength="5" maxlength="4000" rows="8" required placeholder="Jelaskan kendala, langkah yang sudah dicoba, dan hasil yang diharapkan"></textarea></label>
+        <div class="action-row"><button class="btn btn-primary" type="submit">Kirim Tiket</button><a class="btn btn-ghost" href="/account/tickets">Batal</a></div>
+      </form>
+    </div>
+  </div>
+</section>
+<%- include('../partials/footer') %>

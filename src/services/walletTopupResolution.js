@@ -2,6 +2,7 @@ const User = require('../models/User');
 const WalletTopup = require('../models/WalletTopup');
 const WalletTransaction = require('../models/WalletTransaction');
 const { withMongoTransaction } = require('../utils/transaction');
+const { notifyWalletTopup, createNotification } = require('./notificationService');
 
 function transactionKey(topupNumber) {
   return `topup:${topupNumber}`;
@@ -51,6 +52,7 @@ async function approveWalletTopup(topupId, note) {
     topup.creditedAt ||= existing?.createdAt || new Date();
     topup.notes = [topup.notes, resolutionNote].filter(Boolean).join('\n');
     await topup.save({ session });
+    await notifyWalletTopup(topup, session);
     return topup;
   });
 }
@@ -73,6 +75,15 @@ async function rejectWalletTopup(topupId, note) {
     topup.status = 'cancelled';
     topup.notes = [topup.notes, `Ditolak admin: ${note}`].filter(Boolean).join('\n');
     await topup.save({ session });
+    await createNotification({
+      userId: topup.user,
+      type: 'wallet',
+      title: 'Top up ditolak',
+      message: `Top up ${topup.topupNumber} ditolak setelah pemeriksaan admin.`,
+      link: '/account/wallet',
+      idempotencyKey: `topup-rejected:${topup.topupNumber}`,
+      session
+    });
     return topup;
   });
 }

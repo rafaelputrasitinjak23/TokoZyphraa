@@ -1,4 +1,7 @@
 const crypto = require('crypto');
+const fs = require('fs');
+const Notification = require('../models/Notification');
+const { hasAdminPermission, adminLandingPath } = require('../constants/adminPermissions');
 
 const CSRF_COOKIE = 'tz.csrf';
 
@@ -60,25 +63,41 @@ function flashMiddleware(req, res, next) {
   next();
 }
 
-function attachLocals(req, res, next) {
-  res.locals.currentUser = req.session.user || null;
-  res.locals.canAccessAdmin = req.session.user?.role === 'admin';
-  res.locals.isAdmin = req.path === '/admin' || req.path.startsWith('/admin/');
-  res.locals.csrfToken = ensureCsrfToken(req, res);
-  res.locals.cartCount = (req.session.cart || []).reduce((total, item) => {
-    const quantity = Number(item.quantity);
-    return total + (Number.isSafeInteger(quantity) && quantity > 0 ? quantity : 0);
-  }, 0);
-  res.locals.currentPath = req.path;
-  res.locals.appName = 'TokoZyphra';
-  res.locals.enableClientProtection = process.env.ENABLE_CLIENT_PROTECTION !== 'false';
-  res.locals.formatRupiah = (value) => new Intl.NumberFormat('id-ID', {
-    style: 'currency', currency: 'IDR', maximumFractionDigits: 0
-  }).format(Number(value || 0));
-  res.locals.formatDate = (value) => value ? new Intl.DateTimeFormat('id-ID', {
-    dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta'
-  }).format(new Date(value)) : '-';
-  next();
+async function attachLocals(req, res, next) {
+  try {
+    res.locals.currentUser = req.session.user || null;
+    res.locals.canAccessAdmin = req.session.user?.role === 'admin';
+    res.locals.hasAdminPermission = (permission) => hasAdminPermission(req.session.user, permission);
+    res.locals.adminHomePath = adminLandingPath(req.session.user);
+    res.locals.isAdmin = req.path === '/admin' || req.path.startsWith('/admin/');
+    res.locals.csrfToken = ensureCsrfToken(req, res);
+    res.locals.cartCount = (req.session.cart || []).reduce((total, item) => {
+      const quantity = Number(item.quantity);
+      return total + (Number.isSafeInteger(quantity) && quantity > 0 ? quantity : 0);
+    }, 0);
+    res.locals.notificationCount = req.session.user?.id
+      ? await Notification.countDocuments({ user: req.session.user.id, isRead: false })
+      : 0;
+    res.locals.currentPath = req.path;
+    res.locals.appName = 'TokoZyphra';
+    res.locals.enableClientProtection = process.env.ENABLE_CLIENT_PROTECTION !== 'false';
+    res.locals.formatRupiah = (value) => new Intl.NumberFormat('id-ID', {
+      style: 'currency', currency: 'IDR', maximumFractionDigits: 0
+    }).format(Number(value || 0));
+    res.locals.formatDate = (value) => value ? new Intl.DateTimeFormat('id-ID', {
+      dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta'
+    }).format(new Date(value)) : '-';
+    next();
+  } catch (error) {
+    next(error);
+  }
+}
+
+function removeRequestUploads(req) {
+  const files = [req.file, ...Object.values(req.files || {}).flat()].filter(Boolean);
+  files.forEach((file) => {
+    if (file.path) fs.rm(file.path, { force: true }, () => {});
+  });
 }
 
 function renderCsrfError(res) {
@@ -89,15 +108,29 @@ function renderCsrfError(res) {
   });
 }
 
-function csrfMiddleware(req, res, next) {
+function verifyCsrfRequest(req, res, next) {
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
   const supplied = String(req.body?._csrf || req.get('x-csrf-token') || '');
   const expected = readCsrfCookie(req);
-  if (!supplied || !expected || supplied.length !== expected.length) return renderCsrfError(res);
+  if (!supplied || !expected || supplied.length !== expected.length) {
+    removeRequestUploads(req);
+    return renderCsrfError(res);
+  }
   const suppliedBuffer = Buffer.from(supplied, 'utf8');
   const expectedBuffer = Buffer.from(expected, 'utf8');
-  if (!crypto.timingSafeEqual(suppliedBuffer, expectedBuffer)) return renderCsrfError(res);
+  if (!crypto.timingSafeEqual(suppliedBuffer, expectedBuffer)) {
+    removeRequestUploads(req);
+    return renderCsrfError(res);
+  }
   next();
 }
 
-module.exports = { attachLocals, flashMiddleware, csrfMiddleware, setFlash, ensureCsrfToken };
+function csrfMiddleware(req, res, next) {
+  const isProductMultipart = req.is('multipart/form-data')
+    && /^\/admin\/products(?:\/[^/]+)?$/.test(req.path)
+    && ['POST', 'PUT'].includes(req.method);
+  if (isProductMultipart) return next();
+  return verifyCsrfRequest(req, res, next);
+}
+
+module.exports = { attachLocals, flashMiddleware, csrfMiddleware, verifyCsrfRequest, setFlash, ensureCsrfToken };

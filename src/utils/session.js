@@ -14,6 +14,7 @@ function sessionUser(user, hasAvatar = Boolean(user.avatarData)) {
     name: user.name,
     email: user.email,
     role: user.role,
+    adminPermissions: Array.isArray(user.adminPermissions) ? user.adminPermissions : [],
     version: Number(user.sessionVersion || 0),
     hasAvatar: Boolean(hasAvatar)
   };

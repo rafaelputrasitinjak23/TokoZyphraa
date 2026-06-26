@@ -6,6 +6,18 @@ const integerMoney = {
   validate: { validator: Number.isSafeInteger, message: 'Nilai harus berupa bilangan bulat.' }
 };
 
+const digitalAssetSchema = new mongoose.Schema({
+  type: { type: String, enum: ['none', 'local', 'url'], default: 'none' },
+  filePath: { type: String, default: '', maxlength: 1000 },
+  fileName: { type: String, default: '', maxlength: 255 },
+  mimeType: { type: String, default: '', maxlength: 160 },
+  fileSize: { ...integerMoney, default: 0 },
+  url: { type: String, default: '', maxlength: 2000 },
+  downloadLimit: { type: Number, default: 5, min: 0, max: 1000 },
+  downloadCount: { type: Number, default: 0, min: 0 },
+  lastDownloadedAt: { type: Date, default: null }
+}, { _id: false });
+
 const orderItemSchema = new mongoose.Schema({
   product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
   name: { type: String, required: true },
@@ -20,7 +32,10 @@ const orderItemSchema = new mongoose.Schema({
   },
   lineTotal: { ...integerMoney, required: true },
   deliveryType: { type: String, enum: ['digital', 'physical'], default: 'digital' },
-  fulfillmentContent: { type: String, default: '' }
+  fulfillmentContent: { type: String, default: '' },
+  digitalAsset: { type: digitalAssetSchema, default: () => ({}) },
+  serialKeyEnabled: { type: Boolean, default: false },
+  serialKeys: { type: [String], default: [] }
 }, { _id: false });
 
 const shippingAddressSchema = new mongoose.Schema({
@@ -60,6 +75,9 @@ const orderSchema = new mongoose.Schema({
   paidAt: { type: Date, default: null },
   completedAt: { type: Date, default: null },
   stockProcessed: { type: Boolean, default: false },
+  loyaltyAwarded: { type: Boolean, default: false },
+  loyaltyPointsEarned: { type: Number, default: 0, min: 0 },
+  referralRewarded: { type: Boolean, default: false },
   notes: { type: String, default: '', maxlength: 4000 }
 }, { timestamps: true });
 
@@ -69,6 +87,7 @@ orderSchema.index(
 );
 orderSchema.index({ user: 1, createdAt: -1 });
 orderSchema.index({ status: 1, createdAt: -1 });
+orderSchema.index({ status: 1, completedAt: -1 });
 orderSchema.index({ status: 1, paymentExpiresAt: 1 });
 orderSchema.index({ user: 1, voucher: 1, status: 1 });
 

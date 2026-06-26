@@ -9,14 +9,24 @@
       <div class="form-card glass-card">
         <h2>Produk</h2>
         <div class="order-detail-items">
-          <% order.items.forEach((item) => { %>
+          <% order.items.forEach((item, itemIndex) => { %>
             <article>
               <img src="<%= item.imageUrl || '/images/product-placeholder.svg' %>" alt="<%= item.name %>">
               <div>
                 <a href="/products/<%= item.slug %>"><strong><%= item.name %></strong></a>
                 <span><%= item.quantity %> × <%= formatRupiah(item.unitPrice) %></span>
-                <% if (order.status === 'completed' && item.deliveryType !== 'physical' && item.fulfillmentContent) { %>
-                  <div class="fulfillment-box"><strong>Detail Produk Digital</strong><div class="preline"><%= item.fulfillmentContent %></div></div>
+                <% if (order.status === 'completed' && item.deliveryType !== 'physical') { %>
+                  <div class="fulfillment-box digital-delivery-box">
+                    <strong>Akses Produk Digital</strong>
+                    <% if (item.fulfillmentContent) { %><div class="preline"><%= item.fulfillmentContent %></div><% } %>
+                    <% if (item.serialKeys?.length) { %>
+                      <div class="serial-key-list"><span>Serial key</span><% item.serialKeys.forEach((serial) => { %><code><%= serial %></code><% }) %></div>
+                    <% } %>
+                    <% if (item.digitalAsset && ['local', 'url'].includes(item.digitalAsset.type)) { %>
+                      <a class="btn btn-primary btn-sm btn-icon-label" href="/account/downloads/<%= order.orderNumber %>/<%= itemIndex %>"><svg class="svg-icon" aria-hidden="true"><use href="#icon-download"></use></svg><span><%= item.digitalAsset.type === 'url' ? 'Buka File Digital' : 'Unduh File Digital' %></span></a>
+                      <small><%= item.digitalAsset.downloadLimit > 0 ? `${item.digitalAsset.downloadCount || 0}/${item.digitalAsset.downloadLimit} akses digunakan` : 'Unduhan tanpa batas' %></small>
+                    <% } %>
+                  </div>
                 <% } %>
                 <% if (order.status === 'completed' && !reviewed.has(String(item.product))) { %>
                   <details class="review-form">
@@ -50,6 +60,7 @@
         <div class="summary-line"><span>Dompet</span><strong>-<%= formatRupiah(order.walletUsed) %></strong></div>
         <div class="summary-line total"><span>Tagihan</span><strong><%= formatRupiah(order.payableAmount) %></strong></div>
         <% if (order.voucherCode) { %><p class="voucher-chip">Voucher: <%= order.voucherCode %></p><% } %>
+        <a class="btn btn-ghost btn-block" href="/account/tickets/new?order=<%= order.orderNumber %>">Butuh Bantuan / Komplain</a>
         <% if (order.status === 'pending' && order.payableAmount > 0) { %>
           <a class="btn btn-primary btn-block" href="/checkout/payment/<%= order.orderNumber %>">Lanjutkan Pembayaran</a>
           <form method="post" action="/account/orders/<%= order.orderNumber %>/cancel" data-confirm="Batalkan pesanan ini?">

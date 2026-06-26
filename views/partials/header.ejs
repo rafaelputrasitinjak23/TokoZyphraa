@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://athars.space">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=20260626-brand-logo-1">
+  <link rel="stylesheet" href="/css/style.css?v=20260626-feature-suite-1">
 </head>
 <body class="<%= isAdmin ? 'admin-shell' : 'market-shell' %><%= currentUser && !isAdmin ? ' has-mobile-market-nav' : '' %>">
   <%- include('icon-sprite') %>
@@ -35,26 +35,14 @@
 
       <nav class="main-nav" aria-label="Navigasi utama desktop">
         <% if (isAdmin) { %>
-          <a class="<%= currentPath === '/admin' ? 'active' : '' %>" href="/admin">
-            <svg class="svg-icon" aria-hidden="true"><use href="#icon-dashboard"></use></svg>
-            <span>Admin</span>
-          </a>
-          <a class="<%= currentPath.startsWith('/admin/products') ? 'active' : '' %>" href="/admin/products">
-            <svg class="svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg>
-            <span>Produk</span>
-          </a>
-          <a class="<%= currentPath.startsWith('/admin/orders') ? 'active' : '' %>" href="/admin/orders">
-            <svg class="svg-icon" aria-hidden="true"><use href="#icon-cart"></use></svg>
-            <span>Pesanan</span>
-          </a>
-          <a class="<%= currentPath.startsWith('/admin/users') ? 'active' : '' %>" href="/admin/users">
-            <svg class="svg-icon" aria-hidden="true"><use href="#icon-user"></use></svg>
-            <span>Pengguna</span>
-          </a>
-          <a class="<%= currentPath.startsWith('/admin/topups') ? 'active' : '' %>" href="/admin/topups">
-            <svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg>
-            <span>Top Up</span>
-          </a>
+          <% if (hasAdminPermission('analytics')) { %><a class="<%= currentPath === '/admin' ? 'active' : '' %>" href="/admin"><svg class="svg-icon" aria-hidden="true"><use href="#icon-dashboard"></use></svg><span>Analitik</span></a><% } %>
+          <% if (hasAdminPermission('products')) { %><a class="<%= currentPath.startsWith('/admin/products') || currentPath.startsWith('/admin/serial-keys') ? 'active' : '' %>" href="/admin/products"><svg class="svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg><span>Produk</span></a><% } %>
+          <% if (hasAdminPermission('orders')) { %><a class="<%= currentPath.startsWith('/admin/orders') ? 'active' : '' %>" href="/admin/orders"><svg class="svg-icon" aria-hidden="true"><use href="#icon-cart"></use></svg><span>Pesanan</span></a><% } %>
+          <% if (hasAdminPermission('users')) { %><a class="<%= currentPath.startsWith('/admin/users') ? 'active' : '' %>" href="/admin/users"><svg class="svg-icon" aria-hidden="true"><use href="#icon-user"></use></svg><span>Pengguna</span></a><% } %>
+          <% if (hasAdminPermission('tickets')) { %><a class="<%= currentPath.startsWith('/admin/tickets') ? 'active' : '' %>" href="/admin/tickets"><svg class="svg-icon" aria-hidden="true"><use href="#icon-message"></use></svg><span>Tiket</span></a><% } %>
+          <% if (hasAdminPermission('wallet')) { %><a class="<%= currentPath.startsWith('/admin/topups') ? 'active' : '' %>" href="/admin/topups"><svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg><span>Top Up</span></a><% } %>
+          <% if (hasAdminPermission('vouchers')) { %><a class="<%= currentPath.startsWith('/admin/vouchers') ? 'active' : '' %>" href="/admin/vouchers"><svg class="svg-icon" aria-hidden="true"><use href="#icon-tag"></use></svg><span>Voucher</span></a><% } %>
+          <% if (hasAdminPermission('reviews')) { %><a class="<%= currentPath.startsWith('/admin/reviews') ? 'active' : '' %>" href="/admin/reviews"><svg class="svg-icon" aria-hidden="true"><use href="#icon-star"></use></svg><span>Ulasan</span></a><% } %>
         <% } else { %>
           <a class="<%= currentPath === '/' ? 'active' : '' %>" href="/#catalog">
             <svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg>
@@ -75,7 +63,7 @@
             </a>
           <% } %>
           <% if (canAccessAdmin) { %>
-            <a href="/admin">
+            <a href="<%= adminHomePath %>">
               <svg class="svg-icon" aria-hidden="true"><use href="#icon-dashboard"></use></svg>
               <span>Admin</span>
             </a>
@@ -89,6 +77,13 @@
             <svg class="svg-icon" aria-hidden="true"><use href="#icon-cart"></use></svg>
             <span class="cart-link-label">Keranjang</span>
             <% if (cartCount > 0) { %><b><%= cartCount %></b><% } %>
+          </a>
+        <% } %>
+
+        <% if (currentUser) { %>
+          <a class="header-notification-link" href="/account/notifications" aria-label="Notifikasi, <%= notificationCount %> belum dibaca">
+            <svg class="svg-icon" aria-hidden="true"><use href="#icon-bell"></use></svg>
+            <% if (notificationCount > 0) { %><b><%= notificationCount > 99 ? '99+' : notificationCount %></b><% } %>
           </a>
         <% } %>
 
@@ -169,45 +164,30 @@
     </div>
 
     <nav class="responsive-menu-links" aria-label="Navigasi mobile dan tablet">
-      <a class="<%= currentPath === '/' ? 'active' : '' %>" href="/#catalog">
-        <span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg></span>
-        <span><strong>Produk</strong><small>Lihat katalog marketplace</small></span>
-        <svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
-      </a>
-
-      <a class="<%= currentPath === '/cart' || currentPath.startsWith('/checkout') ? 'active' : '' %>" href="/cart">
-        <span class="responsive-menu-link-icon">
-          <svg class="svg-icon" aria-hidden="true"><use href="#icon-cart"></use></svg>
-          <% if (cartCount > 0) { %><b><%= cartCount > 99 ? '99+' : cartCount %></b><% } %>
-        </span>
-        <span><strong>Keranjang</strong><small>Produk yang akan dibeli</small></span>
-        <svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
-      </a>
-
-      <% if (currentUser) { %>
-        <a class="<%= currentPath.startsWith('/account/wallet') ? 'active' : '' %>" href="/account/wallet">
-          <span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg></span>
-          <span><strong>Dompet</strong><small>Saldo dan riwayat transaksi</small></span>
-          <svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
-        </a>
-        <a class="<%= currentPath.startsWith('/account/orders') ? 'active' : '' %>" href="/account/orders">
-          <span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg></span>
-          <span><strong>Pesanan</strong><small>Status dan riwayat pembelian</small></span>
-          <svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
-        </a>
-        <a class="<%= currentPath === '/account' || currentPath === '/account/profile' ? 'active' : '' %>" href="/account">
-          <span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-user"></use></svg></span>
-          <span><strong>Akun Saya</strong><small>Ringkasan dan log pesanan</small></span>
-          <svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
-        </a>
-      <% } %>
-
-      <% if (canAccessAdmin) { %>
-        <a class="responsive-menu-admin-link <%= currentPath.startsWith('/admin') ? 'active' : '' %>" href="/admin">
-          <span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-dashboard"></use></svg></span>
-          <span><strong>Admin Control</strong><small>Kelola toko, pengguna, dan transaksi</small></span>
-          <svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
-        </a>
+      <% if (isAdmin) { %>
+        <% if (hasAdminPermission('analytics')) { %><a class="<%= currentPath === '/admin' ? 'active' : '' %>" href="/admin"><span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-dashboard"></use></svg></span><span><strong>Dashboard Analitik</strong><small>Ringkasan performa toko</small></span><svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a><% } %>
+        <% if (hasAdminPermission('products')) { %><a class="<%= currentPath.startsWith('/admin/products') || currentPath.startsWith('/admin/serial-keys') ? 'active' : '' %>" href="/admin/products"><span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg></span><span><strong>Produk Digital</strong><small>File, link, stok, dan serial key</small></span><svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a><% } %>
+        <% if (hasAdminPermission('orders')) { %><a class="<%= currentPath.startsWith('/admin/orders') ? 'active' : '' %>" href="/admin/orders"><span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-cart"></use></svg></span><span><strong>Pesanan</strong><small>Kelola transaksi pelanggan</small></span><svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a><% } %>
+        <% if (hasAdminPermission('users')) { %><a class="<%= currentPath.startsWith('/admin/users') ? 'active' : '' %>" href="/admin/users"><span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-user"></use></svg></span><span><strong>Pengguna & Role</strong><small>Atur akun dan permission admin</small></span><svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a><% } %>
+        <% if (hasAdminPermission('wallet')) { %><a class="<%= currentPath.startsWith('/admin/topups') ? 'active' : '' %>" href="/admin/topups"><span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg></span><span><strong>Dompet & Top Up</strong><small>Pemeriksaan transaksi saldo</small></span><svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a><% } %>
+        <% if (hasAdminPermission('tickets')) { %><a class="<%= currentPath.startsWith('/admin/tickets') ? 'active' : '' %>" href="/admin/tickets"><span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-message"></use></svg></span><span><strong>Tiket Bantuan</strong><small>Balas komplain pelanggan</small></span><svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a><% } %>
+        <% if (hasAdminPermission('vouchers')) { %><a class="<%= currentPath.startsWith('/admin/vouchers') ? 'active' : '' %>" href="/admin/vouchers"><span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-tag"></use></svg></span><span><strong>Voucher</strong><small>Kelola promo toko</small></span><svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a><% } %>
+        <% if (hasAdminPermission('reviews')) { %><a class="<%= currentPath.startsWith('/admin/reviews') ? 'active' : '' %>" href="/admin/reviews"><span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-star"></use></svg></span><span><strong>Ulasan</strong><small>Moderasi ulasan produk</small></span><svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a><% } %>
+        <a href="/account/notifications"><span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-bell"></use></svg><% if (notificationCount > 0) { %><b><%= notificationCount > 99 ? '99+' : notificationCount %></b><% } %></span><span><strong>Notifikasi Saya</strong><small>Pembaruan transaksi dan akun</small></span><svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a>
+        <a href="/"><span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg></span><span><strong>Buka Marketplace</strong><small>Belanja sebagai pengguna</small></span><svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a>
+        <a href="/account"><span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-user"></use></svg></span><span><strong>Akun Saya</strong><small>Dashboard akun pengguna</small></span><svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a>
+      <% } else { %>
+        <a class="<%= currentPath === '/' ? 'active' : '' %>" href="/#catalog"><span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-store"></use></svg></span><span><strong>Produk</strong><small>Lihat katalog marketplace</small></span><svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a>
+        <a class="<%= currentPath === '/cart' || currentPath.startsWith('/checkout') ? 'active' : '' %>" href="/cart"><span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-cart"></use></svg><% if (cartCount > 0) { %><b><%= cartCount > 99 ? '99+' : cartCount %></b><% } %></span><span><strong>Keranjang</strong><small>Produk yang akan dibeli</small></span><svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a>
+        <% if (currentUser) { %>
+          <a class="<%= currentPath.startsWith('/account/wishlist') ? 'active' : '' %>" href="/account/wishlist"><span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-heart"></use></svg></span><span><strong>Wishlist</strong><small>Produk yang Anda simpan</small></span><svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a>
+          <a class="<%= currentPath.startsWith('/account/notifications') ? 'active' : '' %>" href="/account/notifications"><span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-bell"></use></svg><% if (notificationCount > 0) { %><b><%= notificationCount > 99 ? '99+' : notificationCount %></b><% } %></span><span><strong>Notifikasi</strong><small>Pembaruan transaksi dan akun</small></span><svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a>
+          <a class="<%= currentPath.startsWith('/account/tickets') ? 'active' : '' %>" href="/account/tickets"><span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-message"></use></svg></span><span><strong>Bantuan & Komplain</strong><small>Hubungi tim admin</small></span><svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a>
+          <a class="<%= currentPath.startsWith('/account/wallet') ? 'active' : '' %>" href="/account/wallet"><span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg></span><span><strong>Dompet</strong><small>Saldo dan riwayat transaksi</small></span><svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a>
+          <a class="<%= currentPath.startsWith('/account/orders') ? 'active' : '' %>" href="/account/orders"><span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-package"></use></svg></span><span><strong>Pesanan</strong><small>Status dan riwayat pembelian</small></span><svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a>
+          <a class="<%= currentPath === '/account' || currentPath === '/account/profile' ? 'active' : '' %>" href="/account"><span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-user"></use></svg></span><span><strong>Akun Saya</strong><small>Ringkasan dan log pesanan</small></span><svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a>
+        <% } %>
+        <% if (canAccessAdmin) { %><a class="responsive-menu-admin-link" href="<%= adminHomePath %>"><span class="responsive-menu-link-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-dashboard"></use></svg></span><span><strong>Admin Control</strong><small>Kelola toko dan transaksi</small></span><svg class="svg-icon responsive-menu-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a><% } %>
       <% } %>
     </nav>
 

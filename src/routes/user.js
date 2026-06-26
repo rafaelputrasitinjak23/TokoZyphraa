@@ -8,6 +8,7 @@ const Order = require('../models/Order');
 const Review = require('../models/Review');
 const WalletTransaction = require('../models/WalletTransaction');
 const WalletTopup = require('../models/WalletTopup');
+const Referral = require('../models/Referral');
 const { requireUser } = require('../middleware/auth');
 const noStore = require('../middleware/noStore');
 const { authLimiter, paymentLimiter } = require('../middleware/rateLimits');
@@ -23,6 +24,7 @@ const { parsePage } = require('../utils/input');
 const { safeRefererPath } = require('../utils/redirect');
 const { regenerateSession, sessionUser } = require('../utils/session');
 const asyncHandler = require('../utils/asyncHandler');
+const { ensureReferralCode } = require('../services/referralService');
 
 const router = express.Router();
 router.use(noStore);
@@ -125,12 +127,25 @@ function decodeAvatarData(value) {
 }
 
 router.get('/', asyncHandler(async (req, res) => {
-  const [user, recentOrders, purchaseStats] = await Promise.all([
-    User.findById(req.session.user.id).select('name email phone bio walletBalance createdAt emailVerifiedAt').lean(),
+  let userDocument = await User.findById(req.session.user.id).select('name email phone bio walletBalance loyaltyPoints referralCode createdAt emailVerifiedAt');
+  if (userDocument && !userDocument.referralCode) {
+    await ensureReferralCode(userDocument);
+  }
+  const [recentOrders, purchaseStats, referralCount, rewardedReferralCount] = await Promise.all([
     Order.find({ user: req.session.user.id }).sort({ createdAt: -1 }).limit(10).lean(),
-    getPurchaseStats(req.session.user.id)
+    getPurchaseStats(req.session.user.id),
+    Referral.countDocuments({ referrer: req.session.user.id }),
+    Referral.countDocuments({ referrer: req.session.user.id, status: 'rewarded' })
   ]);
-  res.render('user/dashboard', { title: 'Dashboard Akun', user, recentOrders, purchaseStats });
+  const user = userDocument?.toObject();
+  res.render('user/dashboard', {
+    title: 'Dashboard Akun',
+    user,
+    recentOrders,
+    purchaseStats,
+    referralStats: { total: referralCount, rewarded: rewardedReferralCount },
+    redeemToken: crypto.randomUUID()
+  });
 }));
 
 router.get('/avatar', asyncHandler(async (req, res) => {

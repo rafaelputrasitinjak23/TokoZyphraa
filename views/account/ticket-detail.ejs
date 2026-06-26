@@ -1,0 +1,25 @@
+<%- include('../partials/header') %>
+<section class="section page-section">
+  <div class="container narrow-wide">
+    <div class="section-heading">
+      <div><span class="eyebrow"><%= ticket.ticketNumber %></span><h1><%= ticket.subject %></h1><p><%= ticket.order?.orderNumber ? `Terkait pesanan ${ticket.order.orderNumber}` : 'Tiket bantuan umum' %></p></div>
+      <div class="ticket-card-status"><span class="status-pill status-<%= ticket.status %>"><%= ticket.status %></span><span class="priority-badge priority-<%= ticket.priority %>"><%= ticket.priority %></span></div>
+    </div>
+    <div class="conversation-card glass-card">
+      <% messages.forEach((message) => { %>
+        <article class="conversation-message <%= message.senderRole === 'admin' ? 'admin-message' : 'user-message' %>">
+          <header><strong><%= message.sender?.name || (message.senderRole === 'admin' ? 'Admin' : 'Pengguna') %></strong><span><%= message.senderRole === 'admin' ? 'Admin' : 'Anda' %> · <%= formatDate(message.createdAt) %></span></header>
+          <div class="preline"><%= message.message %></div>
+        </article>
+      <% }) %>
+    </div>
+    <% if (ticket.status !== 'closed') { %>
+      <form method="post" action="/account/tickets/<%= ticket.ticketNumber %>/messages" class="form-card glass-card form-stack">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <label>Balas tiket<textarea name="message" maxlength="4000" rows="5" required placeholder="Tulis balasan Anda"></textarea></label>
+        <button class="btn btn-primary" type="submit">Kirim Balasan</button>
+      </form>
+    <% } %>
+  </div>
+</section>
+<%- include('../partials/footer') %>

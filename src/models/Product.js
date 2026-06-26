@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const integerMoney = {
   type: Number,
   min: 0,
-  validate: { validator: Number.isSafeInteger, message: 'Nilai harus berupa bilangan bulat.' }
+  validate: { validator: (value) => value == null || Number.isSafeInteger(value), message: 'Nilai harus berupa bilangan bulat.' }
 };
 
 const productSchema = new mongoose.Schema({
@@ -31,6 +31,20 @@ const productSchema = new mongoose.Schema({
   flashSaleEnd: { type: Date, default: null },
   deliveryType: { type: String, enum: ['digital', 'physical'], default: 'digital' },
   fulfillmentContent: { type: String, default: '', maxlength: 8000 },
+  digitalAssetType: { type: String, enum: ['none', 'local', 'url'], default: 'none' },
+  digitalFilePath: { type: String, default: '', maxlength: 1000 },
+  digitalFileName: { type: String, default: '', maxlength: 255 },
+  digitalFileMime: { type: String, default: '', maxlength: 160 },
+  digitalFileSize: { ...integerMoney, default: 0 },
+  digitalFileUrl: { type: String, default: '', maxlength: 2000 },
+  downloadLimit: {
+    type: Number,
+    default: 5,
+    min: 0,
+    max: 1000,
+    validate: { validator: Number.isSafeInteger, message: 'Batas unduhan harus berupa bilangan bulat.' }
+  },
+  serialKeyEnabled: { type: Boolean, default: false, index: true },
   averageRating: { type: Number, default: 0, min: 0, max: 5 },
   reviewCount: { ...integerMoney, default: 0 }
 }, { timestamps: true });

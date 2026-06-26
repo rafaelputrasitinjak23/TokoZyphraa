@@ -1,85 +1,52 @@
 <%- include('../partials/header') %>
 <section class="section page-section">
   <div class="container">
-    <div class="admin-heading">
-      <div>
-        <span class="eyebrow">ADMIN / PENGGUNA</span>
-        <h1>Kelola Pengguna, Role & Dompet</h1>
-        <p>Semua akun dapat berbelanja. Role admin hanya menambahkan akses ke panel kontrol.</p>
-      </div>
-    </div>
+    <div class="admin-heading"><div><span class="eyebrow">ADMIN / PENGGUNA</span><h1>Pengguna, Role & Permission</h1><p>Semua akun tetap dapat berbelanja. Permission hanya mengatur modul panel admin yang dapat dibuka.</p></div></div>
 
     <div class="user-admin-grid">
       <% users.forEach((user) => { %>
         <% const isCurrentAdmin = String(user._id) === currentAdminId; %>
+        <% const assignedPermissions = Array.isArray(user.adminPermissions) && user.adminPermissions.length ? user.adminPermissions : adminPermissions.map((item) => item.key); %>
         <article class="user-admin-card glass-card">
           <div class="user-admin-head">
             <div class="avatar"><%= user.name.slice(0, 1).toUpperCase() %></div>
-            <div>
-              <h3><%= user.name %></h3>
-              <p><%= user.email %></p>
-            </div>
-            <div class="user-admin-badges">
-              <span class="status-pill <%= user.role === 'admin' ? 'role-admin' : 'role-user' %>">
-                <%= user.role === 'admin' ? 'admin' : 'pengguna' %>
-              </span>
-              <span class="status-pill <%= user.isActive ? 'status-completed' : 'status-cancelled' %>">
-                <%= user.isActive ? 'aktif' : 'nonaktif' %>
-              </span>
-            </div>
+            <div><h3><%= user.name %></h3><p><%= user.email %></p></div>
+            <div class="user-admin-badges"><span class="status-pill <%= user.role === 'admin' ? 'role-admin' : 'role-user' %>"><%= user.role === 'admin' ? 'admin' : 'pengguna' %></span><span class="status-pill <%= user.isActive ? 'status-completed' : 'status-cancelled' %>"><%= user.isActive ? 'aktif' : 'nonaktif' %></span></div>
           </div>
 
-          <div class="wallet-balance">
-            <span>Saldo dompet</span>
-            <strong><%= formatRupiah(user.walletBalance) %></strong>
-          </div>
+          <div class="user-metrics-row"><div><span>Saldo</span><strong><%= formatRupiah(user.walletBalance) %></strong></div><div><span>Poin</span><strong><%= user.loyaltyPoints || 0 %></strong></div><div><span>Referral</span><strong><%= user.referralCode || '-' %></strong></div></div>
 
-          <form method="post" action="/admin/users/<%= user._id %>/wallet" class="wallet-adjust-form" data-disable-on-submit>
-            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <input type="hidden" name="adjustmentToken" value="<%= user.adjustmentToken %>">
-            <select name="type" aria-label="Jenis penyesuaian saldo">
-              <option value="credit">Tambah saldo</option>
-              <option value="debit">Kurangi saldo</option>
-            </select>
-            <input type="number" name="amount" min="1" max="100000000" required placeholder="Nominal">
-            <input type="text" name="note" maxlength="500" placeholder="Catatan penyesuaian">
-            <button class="btn btn-primary btn-sm" type="submit">Proses Saldo</button>
-          </form>
+          <% if (hasAdminPermission('wallet')) { %>
+            <form method="post" action="/admin/users/<%= user._id %>/wallet" class="wallet-adjust-form" data-disable-on-submit>
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="adjustmentToken" value="<%= user.adjustmentToken %>">
+              <select name="type"><option value="credit">Tambah saldo</option><option value="debit">Kurangi saldo</option></select><input type="number" name="amount" min="1" max="100000000" required placeholder="Nominal"><input type="text" name="note" maxlength="500" placeholder="Catatan"><button class="btn btn-primary btn-sm" type="submit">Proses Saldo</button>
+            </form>
+          <% } %>
+
+          <% if (user.role === 'admin') { %>
+            <form method="post" action="/admin/users/<%= user._id %>/permissions" class="permission-form">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <strong>Permission admin</strong>
+              <div class="permission-grid"><% adminPermissions.forEach((permission) => { %><label class="check-row"><input type="checkbox" name="permissions" value="<%= permission.key %>" <%= assignedPermissions.includes(permission.key) ? 'checked' : '' %> <%= isCurrentAdmin ? 'disabled' : '' %>><span><%= permission.label %></span></label><% }) %></div>
+              <% if (!isCurrentAdmin) { %><button class="btn btn-ghost btn-sm" type="submit">Simpan Permission</button><% } else { %><span class="current-admin-note">Permission akun yang sedang dipakai tidak dapat diubah.</span><% } %>
+            </form>
+          <% } %>
 
           <div class="user-admin-actions">
-            <% if (isCurrentAdmin) { %>
-              <span class="current-admin-note">Akun admin yang sedang digunakan</span>
+            <% if (isCurrentAdmin) { %><span class="current-admin-note">Akun admin yang sedang digunakan</span><% } else if (user.role === 'user') { %>
+              <form method="post" action="/admin/users/<%= user._id %>/role" class="permission-form" data-confirm="Jadikan akun ini sebagai admin?">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="role" value="admin">
+                <strong>Permission awal</strong><div class="permission-grid"><% adminPermissions.forEach((permission) => { %><label class="check-row"><input type="checkbox" name="permissions" value="<%= permission.key %>" checked><span><%= permission.label %></span></label><% }) %></div>
+                <button class="btn btn-primary btn-sm" type="submit">Jadikan Admin</button>
+              </form>
             <% } else { %>
-              <form
-                method="post"
-                action="/admin/users/<%= user._id %>/role"
-                data-confirm="<%= user.role === 'admin' ? 'Cabut akses admin dari akun ini?' : 'Jadikan akun ini sebagai admin?' %>"
-                data-disable-on-submit
-              >
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <input type="hidden" name="role" value="<%= user.role === 'admin' ? 'user' : 'admin' %>">
-                <button class="btn <%= user.role === 'admin' ? 'btn-ghost' : 'btn-primary' %> btn-sm" type="submit">
-                  <%= user.role === 'admin' ? 'Cabut Akses Admin' : 'Jadikan Admin' %>
-                </button>
-              </form>
-
-              <form
-                method="post"
-                action="/admin/users/<%= user._id %>/toggle"
-                data-confirm="<%= user.isActive ? 'Nonaktifkan akun ini?' : 'Aktifkan kembali akun ini?' %>"
-                data-disable-on-submit
-              >
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <button class="text-button <%= user.isActive ? 'danger-text' : '' %>" type="submit">
-                  <%= user.isActive ? 'Nonaktifkan Akun' : 'Aktifkan Akun' %>
-                </button>
-              </form>
+              <form method="post" action="/admin/users/<%= user._id %>/role" data-confirm="Cabut seluruh akses admin dari akun ini?"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="role" value="user"><button class="btn btn-ghost btn-sm" type="submit">Cabut Akses Admin</button></form>
             <% } %>
+            <% if (!isCurrentAdmin) { %><form method="post" action="/admin/users/<%= user._id %>/toggle" data-confirm="<%= user.isActive ? 'Nonaktifkan akun ini?' : 'Aktifkan kembali akun ini?' %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="text-button <%= user.isActive ? 'danger-text' : '' %>" type="submit"><%= user.isActive ? 'Nonaktifkan Akun' : 'Aktifkan Akun' %></button></form><% } %>
           </div>
         </article>
       <% }) %>
     </div>
-
     <%- include('../partials/pagination', { pagination }) %>
   </div>
 </section>

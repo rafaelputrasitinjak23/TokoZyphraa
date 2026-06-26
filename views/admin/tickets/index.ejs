@@ -1,0 +1,15 @@
+<%- include('../../partials/header') %>
+<section class="section page-section">
+  <div class="container">
+    <div class="admin-heading"><div><span class="eyebrow">ADMIN / BANTUAN</span><h1>Tiket & Komplain</h1><p>Kelola percakapan bantuan dan prioritas masalah pengguna.</p></div></div>
+    <form class="catalog-filter glass-card compact-filter" method="get" action="/admin/tickets">
+      <select name="status"><option value="">Semua status</option><% ['open','in_progress','resolved','closed'].forEach((status) => { %><option value="<%= status %>" <%= selectedStatus === status ? 'selected' : '' %>><%= status %></option><% }) %></select>
+      <button class="btn btn-primary btn-sm" type="submit">Filter</button>
+    </form>
+    <div class="table-card glass-card"><div class="responsive-table"><table><thead><tr><th>Tiket</th><th>Pengguna</th><th>Kategori</th><th>Prioritas</th><th>Status</th><th>Aktivitas</th></tr></thead><tbody>
+      <% tickets.forEach((ticket) => { %><tr><td><a href="/admin/tickets/<%= ticket.ticketNumber %>"><strong><%= ticket.ticketNumber %></strong></a><small class="table-sub"><%= ticket.subject %></small></td><td><%= ticket.user?.name || '-' %><small class="table-sub"><%= ticket.user?.email || '' %></small></td><td><%= ticket.category %></td><td><span class="priority-badge priority-<%= ticket.priority %>"><%= ticket.priority %></span></td><td><span class="status-pill status-<%= ticket.status %>"><%= ticket.status %></span></td><td><%= formatDate(ticket.lastMessageAt) %><small class="table-sub">Terakhir: <%= ticket.lastReplyBy %></small></td></tr><% }) %>
+      <% if (!tickets.length) { %><tr><td colspan="6">Tidak ada tiket pada filter ini.</td></tr><% } %>
+    </tbody></table></div></div>
+  </div>
+</section>
+<%- include('../../partials/footer') %>

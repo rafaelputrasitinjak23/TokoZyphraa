@@ -7,6 +7,7 @@ const { withMongoTransaction } = require('../utils/transaction');
 const { getTransactionDetail, cancelTransaction } = require('./pakasir');
 const { verifyPakasirTransaction, pakasirCompletedAt } = require('./paymentVerification');
 const { completeOrder } = require('./orderFulfillment');
+const { notifyOrderCancelled } = require('./notificationService');
 
 async function cancelOrder(orderOrId, status = 'cancelled', note = '') {
   if (!['cancelled', 'expired'].includes(status)) throw new Error('Status pembatalan tidak valid.');
@@ -63,6 +64,7 @@ async function cancelOrder(orderOrId, status = 'cancelled', note = '') {
     order.paymentSetupStatus = 'idle';
     if (note) order.notes = `${order.notes || ''}\n${note}`.trim();
     await order.save({ session });
+    await notifyOrderCancelled(order, session);
     return order;
   });
 }

@@ -288,6 +288,22 @@
     });
   });
 
+  const deliveryTypeInput = document.querySelector('[data-delivery-type]');
+  const digitalFields = document.querySelector('[data-digital-fields]');
+  const serialKeyInput = digitalFields?.querySelector('input[name="serialKeyEnabled"]');
+  const stockInput = document.querySelector('input[name="stock"]');
+  const syncProductDeliveryFields = () => {
+    const isDigital = deliveryTypeInput?.value !== 'physical';
+    if (digitalFields) digitalFields.hidden = !isDigital;
+    digitalFields?.querySelectorAll('input, textarea, select').forEach((field) => {
+      field.disabled = !isDigital;
+    });
+    if (stockInput) stockInput.readOnly = Boolean(isDigital && serialKeyInput?.checked);
+  };
+  deliveryTypeInput?.addEventListener('change', syncProductDeliveryFields);
+  serialKeyInput?.addEventListener('change', syncProductDeliveryFields);
+  syncProductDeliveryFields();
+
   const countdown = document.querySelector('[data-countdown]');
   if (countdown) {
     const target = new Date(countdown.dataset.countdown).getTime();

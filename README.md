@@ -1,12 +1,19 @@
 # TokoZyphra
 
-TokoZyphra adalah aplikasi e-commerce responsif berbasis Express.js, EJS, dan MongoDB. Proyek ini menyediakan registrasi OTP email, CAPTCHA, katalog dan keranjang, checkout, voucher, dompet pengguna, produk digital maupun fisik, ulasan terverifikasi, panel administrator, serta pembayaran Pakasir.
+TokoZyphra adalah aplikasi e-commerce responsif berbasis Express.js, EJS, dan MongoDB yang berfokus pada penjualan produk digital. Proyek ini menyediakan registrasi OTP email, CAPTCHA, katalog dan keranjang, checkout, voucher, dompet pengguna, pengiriman file atau link digital, serial key, ulasan terverifikasi, dukungan pelanggan, panel administrator, serta pembayaran Pakasir.
 
 ## Fitur Utama
 
 - Registrasi pengguna dengan email, kata sandi, CAPTCHA, dan OTP melalui Nodemailer.
-- Login pengguna dan administrator terpisah dengan CAPTCHA.
+- Login terpadu untuk pengguna dan administrator melalui `/auth/login` dengan CAPTCHA.
 - Katalog, pencarian, kategori, flash sale, keranjang, dan checkout.
+- Notifikasi dalam aplikasi untuk pesanan, pembayaran, top up, tiket bantuan, referral, dan poin loyalitas.
+- Tiket bantuan dan komplain yang dapat dikaitkan dengan pesanan serta dibalas oleh admin.
+- Wishlist pengguna dan katalog dengan pencarian, filter harga, stok, rating, kategori, serta sorting.
+- Dashboard analitik admin untuk omzet, pertumbuhan, status pesanan, metode pembayaran, dan produk terlaris.
+- Role admin dengan permission per modul tanpa menghilangkan kemampuan akun admin untuk berbelanja.
+- Referral dan loyalty point dengan bonus transaksi pertama serta penukaran poin menjadi saldo.
+- Produk digital dapat memakai upload file privat, link HTTPS, instruksi fulfillment, serial key otomatis, dan batas unduhan.
 - Produk digital, produk gratis, dan produk fisik dengan alamat pengiriman.
 - Voucher persentase atau nominal dengan periode aktif, minimal transaksi, kuota global, dan batas per pengguna.
 - Dompet pengguna, top-up Pakasir, riwayat saldo, penggunaan saldo saat checkout, dan refund pembatalan.
@@ -62,6 +69,7 @@ Gunakan `.env.example` sebagai acuan. Konfigurasi utama:
 - `JOB_SECRET` atau `CRON_SECRET`: secret minimal 32 karakter untuk endpoint rekonsiliasi.
 - `ENABLE_INTERNAL_JOBS`: menjalankan scheduler di dalam proses Node.js.
 - `INTERNAL_JOB_INTERVAL_MINUTES`: interval scheduler internal.
+- `MAX_PRODUCT_FILE_BYTES`: batas ukuran satu file produk digital, default `104857600` atau 100 MB.
 
 Jangan commit `.env` ke repository.
 
@@ -157,6 +165,14 @@ Jangan mengaktifkan scheduler internal pada banyak instance sekaligus. Operasi r
 8. Jalankan health check dan pengujian sandbox sebelum menerima transaksi nyata.
 
 Aplikasi mengekspor instance Express melalui `module.exports = app` pada `index.js`, sehingga dapat digunakan oleh platform Node.js maupun adapter serverless yang mendukung Express.
+
+## Penyimpanan Produk Digital
+
+File produk yang diunggah admin disimpan di `private_uploads/products` dan tidak disajikan sebagai static asset. File hanya dapat diunduh melalui endpoint terautentikasi setelah sistem memastikan pesanan milik pengguna telah selesai. Folder `private_uploads` harus dipasang pada persistent storage saat deployment dan disertakan dalam strategi backup.
+
+Link produk digital wajib menggunakan HTTPS. Untuk file besar atau deployment serverless, gunakan object storage privat dengan signed URL dan pertahankan pemeriksaan kepemilikan pesanan pada aplikasi.
+
+Serial key disimpan terpisah, diberikan secara atomik saat fulfillment, dan stok produk serial mengikuti jumlah key yang masih tersedia.
 
 ## Penyimpanan Gambar
 

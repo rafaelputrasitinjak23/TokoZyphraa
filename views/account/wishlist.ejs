@@ -1,0 +1,14 @@
+<%- include('../partials/header') %>
+<section class="section page-section">
+  <div class="container">
+    <div class="section-heading"><div><span class="eyebrow">AKUN</span><h1>Wishlist Saya</h1><p>Simpan produk yang ingin Anda beli nanti.</p></div></div>
+    <% if (products.length) { %>
+      <div class="product-grid">
+        <% products.forEach((product) => { %><%- include('../partials/product-card', { product }) %><% }) %>
+      </div>
+    <% } else { %>
+      <div class="empty-state glass-card"><h3>Wishlist masih kosong</h3><p>Tekan ikon hati pada produk untuk menyimpannya.</p><a class="btn btn-primary" href="/#catalog">Lihat Produk</a></div>
+    <% } %>
+  </div>
+</section>
+<%- include('../partials/footer') %>

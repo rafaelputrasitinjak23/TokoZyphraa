@@ -1,12 +1,13 @@
 const User = require('../models/User');
 const { destroySession, sessionUser } = require('../utils/session');
+const { hasAdminPermission, adminLandingPath } = require('../constants/adminPermissions');
 
 async function loadSessionUser(req) {
   const stored = req.session.user;
   if (!stored?.id) return null;
 
   const user = await User.findOne({ _id: stored.id, role: stored.role, isActive: true })
-    .select('name email role sessionVersion isActive')
+    .select('name email role adminPermissions sessionVersion isActive')
     .lean();
 
   if (!user || Number(user.sessionVersion || 0) !== Number(stored.version || 0)) {
@@ -53,6 +54,25 @@ async function requireAdmin(req, res, next) {
   }
 }
 
+function requirePermission(permission) {
+  return async function permissionMiddleware(req, res, next) {
+    try {
+      if (!req.authUser) {
+        const user = await loadSessionUser(req);
+        if (!user) return redirectToLogin(req, res, true);
+        req.authUser = user;
+      }
+      if (!hasAdminPermission(req.authUser, permission)) {
+        req.flash('error', 'Akun admin Anda tidak memiliki permission untuk modul tersebut.');
+        return res.redirect(adminLandingPath(req.authUser));
+      }
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
 async function requireGuest(req, res, next) {
   try {
     if (!req.session.user) return next();
@@ -68,6 +88,7 @@ module.exports = {
   requireAuthenticated,
   requireUser: requireAuthenticated,
   requireAdmin,
+  requirePermission,
   requireGuest,
   loadSessionUser
 };

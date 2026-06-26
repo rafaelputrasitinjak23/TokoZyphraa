@@ -107,6 +107,25 @@
       </a>
     </section>
 
+    <section class="loyalty-referral-grid" id="loyalty">
+      <article class="loyalty-card glass-card">
+        <div class="panel-heading"><div><span class="eyebrow">LOYALTY POINT</span><h2><%= user.loyaltyPoints || 0 %> poin</h2></div><svg class="svg-icon feature-card-icon" aria-hidden="true"><use href="#icon-star"></use></svg></div>
+        <p>Dapatkan 1 poin untuk setiap Rp1.000 nilai transaksi. Setiap 100 poin dapat ditukar menjadi saldo Rp1.000.</p>
+        <form method="post" action="/account/loyalty/redeem" class="loyalty-redeem-form">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="redeemToken" value="<%= redeemToken %>">
+          <input type="number" name="points" min="100" step="100" max="<%= user.loyaltyPoints || 0 %>" placeholder="Jumlah poin" required>
+          <button class="btn btn-primary btn-sm" type="submit" <%= (user.loyaltyPoints || 0) < 100 ? 'disabled' : '' %>>Tukar ke Saldo</button>
+        </form>
+        <a class="text-link" href="/account/loyalty/history">Lihat riwayat poin</a>
+      </article>
+      <article class="referral-card glass-card">
+        <div class="panel-heading"><div><span class="eyebrow">REFERRAL</span><h2>Undang teman</h2></div><svg class="svg-icon feature-card-icon" aria-hidden="true"><use href="#icon-gift"></use></svg></div>
+        <p>Dapatkan 100 poin setelah teman yang mendaftar dengan kode Anda menyelesaikan transaksi pertamanya.</p>
+        <div class="referral-code-box"><code><%= user.referralCode || '-' %></code><button class="btn btn-ghost btn-sm" type="button" data-copy="<%= user.referralCode || '' %>">Salin kode</button></div>
+        <div class="referral-stats"><span><strong><%= referralStats.total %></strong> terdaftar</span><span><strong><%= referralStats.rewarded %></strong> menghasilkan bonus</span></div>
+      </article>
+    </section>
+
     <section class="account-activity-card glass-card">
       <header class="account-activity-header">
         <div>

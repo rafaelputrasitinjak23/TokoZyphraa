@@ -1,0 +1,22 @@
+<%- include('../partials/header') %>
+<section class="section page-section">
+  <div class="container narrow-wide">
+    <div class="section-heading">
+      <div><span class="eyebrow">BANTUAN</span><h1>Tiket & Komplain</h1><p>Hubungi admin mengenai produk, pembayaran, refund, akun, atau file unduhan.</p></div>
+      <a class="btn btn-primary" href="/account/tickets/new">Buat Tiket</a>
+    </div>
+    <% if (tickets.length) { %>
+      <div class="ticket-list">
+        <% tickets.forEach((ticket) => { %>
+          <a class="ticket-card glass-card" href="/account/tickets/<%= ticket.ticketNumber %>">
+            <div><span class="ticket-number"><%= ticket.ticketNumber %></span><h3><%= ticket.subject %></h3><p><%= ticket.order?.orderNumber ? `Pesanan ${ticket.order.orderNumber}` : 'Tanpa pesanan terkait' %> · <%= formatDate(ticket.lastMessageAt) %></p></div>
+            <div class="ticket-card-status"><span class="status-pill status-<%= ticket.status %>"><%= ticket.status %></span><span class="priority-badge priority-<%= ticket.priority %>"><%= ticket.priority %></span></div>
+          </a>
+        <% }) %>
+      </div>
+    <% } else { %>
+      <div class="empty-state glass-card"><h3>Belum ada tiket</h3><p>Buat tiket bila Anda membutuhkan bantuan dari admin.</p></div>
+    <% } %>
+  </div>
+</section>
+<%- include('../partials/footer') %>

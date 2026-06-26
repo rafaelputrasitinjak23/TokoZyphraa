@@ -4,22 +4,26 @@
     <% if (product.discountPercent > 0) { %><span class="discount-badge"><svg class="svg-icon" aria-hidden="true"><use href="#icon-tag"></use></svg>-<%= product.discountPercent %>%</span><% } %>
     <% if (product.effectivePrice === 0) { %><span class="free-badge"><svg class="svg-icon" aria-hidden="true"><use href="#icon-gift"></use></svg>GRATIS</span><% } %>
   </a>
+  <div class="product-card-actions-top">
+    <% if (currentUser) { %>
+      <form method="post" action="/account/wishlist/<%= product._id %>/toggle">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="wishlist-button <%= product.isWishlisted ? 'active' : '' %>" type="submit" aria-label="<%= product.isWishlisted ? 'Hapus dari wishlist' : 'Tambahkan ke wishlist' %>"><svg class="svg-icon" aria-hidden="true"><use href="#icon-heart"></use></svg></button>
+      </form>
+    <% } else { %>
+      <a class="wishlist-button" href="/auth/login" aria-label="Masuk untuk menyimpan wishlist"><svg class="svg-icon" aria-hidden="true"><use href="#icon-heart"></use></svg></a>
+    <% } %>
+  </div>
   <div class="product-body">
-    <span class="category-label"><%= product.category %></span>
+    <div class="product-label-row"><span class="category-label"><%= product.category %></span><span class="digital-label"><svg class="svg-icon" aria-hidden="true"><use href="#<%= product.deliveryType === 'physical' ? 'icon-package' : 'icon-download' %>"></use></svg><%= product.deliveryType === 'physical' ? 'Fisik' : 'Digital' %></span></div>
     <h3><a href="/products/<%= product.slug %>"><%= product.name %></a></h3>
     <p><%= product.shortDescription || product.description.slice(0, 100) %></p>
     <div class="rating-row"><span><svg class="svg-icon" aria-hidden="true"><use href="#icon-star"></use></svg><%= Number(product.averageRating || 0).toFixed(1) %></span><span><%= product.soldCount %> terjual</span></div>
     <div class="price-row">
-      <div>
-        <% if (product.effectivePrice < product.price) { %><del><%= formatRupiah(product.price) %></del><% } %>
-        <strong><%= product.effectivePrice === 0 ? 'Gratis' : formatRupiah(product.effectivePrice) %></strong>
-      </div>
+      <div><% if (product.effectivePrice < product.price) { %><del><%= formatRupiah(product.price) %></del><% } %><strong><%= product.effectivePrice === 0 ? 'Gratis' : formatRupiah(product.effectivePrice) %></strong></div>
       <form method="post" action="/cart/add/<%= product._id %>">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-        <button class="icon-btn" type="submit" aria-label="Tambah <%= product.name %> ke keranjang" <%= product.stock < 1 ? 'disabled' : '' %>>
-          <svg class="svg-icon" aria-hidden="true"><use href="#icon-cart"></use></svg>
-          <span class="icon-btn-plus">+</span>
-        </button>
+        <button class="icon-btn" type="submit" aria-label="Tambah <%= product.name %> ke keranjang" <%= product.stock < 1 ? 'disabled' : '' %>><svg class="svg-icon" aria-hidden="true"><use href="#icon-cart"></use></svg><span class="icon-btn-plus">+</span></button>
       </form>
     </div>
   </div>

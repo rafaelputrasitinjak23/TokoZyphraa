@@ -10,6 +10,8 @@ const noStore = require('../middleware/noStore');
 const { regenerateSession, sessionUser } = require('../utils/session');
 const { safeLocalPath } = require('../utils/redirect');
 const asyncHandler = require('../utils/asyncHandler');
+const { normalizeReferralCode, generateReferralCode, resolveReferrer, createReferral } = require('../services/referralService');
+const { withMongoTransaction } = require('../utils/transaction');
 
 const router = express.Router();
 const REGISTRATION_SESSION_MS = 30 * 60 * 1000;
@@ -22,13 +24,17 @@ router.get('/captcha/:context.svg', captchaLimiter, (req, res) => {
   res.type('svg').set('Cache-Control', 'no-store, no-cache, must-revalidate').send(createCaptcha(req, req.params.context));
 });
 
-router.get('/register', requireGuest, (req, res) => res.render('auth/register', { title: 'Daftar Akun' }));
+router.get('/register', requireGuest, (req, res) => res.render('auth/register', {
+  title: 'Daftar Akun',
+  referralCode: normalizeReferralCode(req.query.ref)
+}));
 
 router.post('/register', requireGuest, otpLimiter, asyncHandler(async (req, res) => {
   const name = String(req.body.name || '').trim();
   const email = String(req.body.email || '').trim().toLowerCase();
   const password = String(req.body.password || '');
   const passwordConfirm = String(req.body.passwordConfirm || '');
+  const referralCode = normalizeReferralCode(req.body.referralCode);
 
   if (!verifyCaptcha(req, 'register', req.body.captcha)) {
     req.flash('error', 'CAPTCHA tidak sesuai atau sudah kedaluwarsa.');
@@ -55,10 +61,21 @@ router.post('/register', requireGuest, otpLimiter, asyncHandler(async (req, res)
     return res.redirect('/auth/login');
   }
 
+  let referrer = null;
+  if (referralCode) {
+    referrer = await resolveReferrer(referralCode);
+    if (!referrer) {
+      req.flash('error', 'Kode referral tidak ditemukan atau tidak aktif.');
+      return res.redirect(`/auth/register?ref=${encodeURIComponent(referralCode)}`);
+    }
+  }
+
   req.session.pendingRegistration = {
     name,
     email,
     passwordHash: await bcrypt.hash(password, 12),
+    referralCode: referrer?.referralCode || '',
+    referrerId: referrer?._id ? String(referrer._id) : '',
     createdAt: Date.now()
   };
   await issueRegistrationOtp({ email, name });
@@ -91,11 +108,25 @@ router.post('/verify-registration', requireGuest, authLimiter, asyncHandler(asyn
 
   let user;
   try {
-    user = await User.create({
-      name: pending.name,
-      email: pending.email,
-      passwordHash: pending.passwordHash,
-      emailVerifiedAt: new Date()
+    user = await withMongoTransaction(async (session) => {
+      const referralCode = await generateReferralCode(pending.name);
+      const [createdUser] = await User.create([{
+        name: pending.name,
+        email: pending.email,
+        passwordHash: pending.passwordHash,
+        emailVerifiedAt: new Date(),
+        referralCode,
+        referredBy: pending.referrerId || null
+      }], { session });
+      if (pending.referrerId) {
+        await createReferral({
+          referrerId: pending.referrerId,
+          referredUserId: createdUser._id,
+          code: pending.referralCode,
+          session
+        });
+      }
+      return createdUser;
     });
   } catch (error) {
     if (error.code === 11000) {

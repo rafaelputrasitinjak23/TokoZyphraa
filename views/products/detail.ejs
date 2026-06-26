@@ -6,7 +6,7 @@
       <% if (product.discountPercent > 0) { %><span class="discount-badge large">Hemat <%= product.discountPercent %>%</span><% } %>
     </div>
     <div class="detail-copy">
-      <span class="category-label"><%= product.category %></span>
+      <div class="detail-label-row"><span class="category-label"><%= product.category %></span><span class="digital-label"><svg class="svg-icon" aria-hidden="true"><use href="#icon-download"></use></svg>Produk digital</span></div>
       <h1><%= product.name %></h1>
       <div class="rating-row detail-rating"><span>★ <%= Number(product.averageRating || 0).toFixed(1) %> dari <%= product.reviewCount %> ulasan</span><span><%= product.soldCount %> terjual</span></div>
       <p class="lead"><%= product.shortDescription %></p>
@@ -15,12 +15,15 @@
         <strong><%= product.effectivePrice === 0 ? 'Gratis' : formatRupiah(product.effectivePrice) %></strong>
       </div>
       <div class="stock-line"><span class="status-dot"><%= product.stock > 0 ? `Stok tersedia: ${product.stock}` : 'Stok habis' %></span><span>Pengiriman: <%= product.deliveryType === 'digital' ? 'Digital' : 'Fisik' %></span></div>
+      <div class="detail-purchase-actions">
       <form method="post" action="/cart/add/<%= product._id %>" class="buy-form">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <label>Jumlah<input type="number" name="quantity" value="1" min="1" max="<%= Math.min(product.stock, 10) %>"></label>
         <button class="btn btn-primary" type="submit" name="buyNow" value="1" <%= product.stock < 1 ? 'disabled' : '' %>>Tambah ke Keranjang</button>
       </form>
-      <div class="benefit-list"><span>✓ Pembayaran Pakasir</span><span>✓ Voucher dan saldo dompet</span><span>✓ Ulasan pembeli terverifikasi</span></div>
+      <% if (currentUser) { %><form method="post" action="/account/wishlist/<%= product._id %>/toggle"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="btn btn-ghost btn-icon-label" type="submit"><svg class="svg-icon" aria-hidden="true"><use href="#icon-heart"></use></svg><span><%= product.isWishlisted ? 'Hapus dari Wishlist' : 'Simpan ke Wishlist' %></span></button></form><% } else { %><a class="btn btn-ghost btn-icon-label" href="/auth/login"><svg class="svg-icon" aria-hidden="true"><use href="#icon-heart"></use></svg><span>Masuk untuk Wishlist</span></a><% } %>
+      </div>
+      <div class="benefit-list"><span>✓ Akses otomatis setelah pembayaran</span><span>✓ File/link terlindungi</span><% if (product.serialKeyEnabled) { %><span>✓ Serial key otomatis</span><% } %><span>✓ Ulasan pembeli terverifikasi</span></div>
     </div>
   </div>
 </section>

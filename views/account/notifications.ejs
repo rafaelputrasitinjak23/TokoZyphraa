@@ -1,0 +1,40 @@
+<%- include('../partials/header') %>
+<section class="section page-section">
+  <div class="container narrow-wide">
+    <div class="section-heading">
+      <div><span class="eyebrow">AKUN</span><h1>Notifikasi</h1><p>Pembaruan transaksi, tiket, dompet, referral, dan poin loyalitas.</p></div>
+      <% if (notifications.some((item) => !item.isRead)) { %>
+        <form method="post" action="/account/notifications/read-all">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn btn-ghost btn-sm" type="submit">Tandai semua dibaca</button>
+        </form>
+      <% } %>
+    </div>
+    <% if (notifications.length) { %>
+      <div class="notification-list">
+        <% notifications.forEach((notification) => { %>
+          <article class="notification-card glass-card <%= notification.isRead ? '' : 'unread' %>">
+            <span class="notification-icon"><svg class="svg-icon" aria-hidden="true"><use href="#icon-bell"></use></svg></span>
+            <div>
+              <div class="notification-title-row"><h3><%= notification.title %></h3><time><%= formatDate(notification.createdAt) %></time></div>
+              <p><%= notification.message %></p>
+              <div class="notification-actions">
+                <% if (notification.link) { %><a href="<%= notification.link %>">Buka detail</a><% } %>
+                <% if (!notification.isRead) { %>
+                  <form method="post" action="/account/notifications/<%= notification._id %>/read">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button class="text-button" type="submit">Tandai dibaca</button>
+                  </form>
+                <% } %>
+              </div>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+      <%- include('../partials/pagination', { pagination }) %>
+    <% } else { %>
+      <div class="empty-state glass-card"><h3>Belum ada notifikasi</h3><p>Notifikasi transaksi dan bantuan akan muncul di sini.</p></div>
+    <% } %>
+  </div>
+</section>
+<%- include('../partials/footer') %>

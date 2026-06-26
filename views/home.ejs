@@ -43,13 +43,15 @@
     <div class="section-heading">
       <div><span class="eyebrow">KATALOG</span><h2>Produk pilihan TokoZyphra</h2></div>
     </div>
-    <form class="catalog-filter glass-card" method="get" action="/">
-      <div class="search-input-wrap"><svg class="svg-icon" aria-hidden="true"><use href="#icon-search"></use></svg><input type="search" name="q" value="<%= search %>" placeholder="Cari produk..." aria-label="Cari produk"></div>
-      <select name="category" aria-label="Pilih kategori">
-        <option value="">Semua kategori</option>
-        <% categories.forEach((item) => { %><option value="<%= item %>" <%= category === item ? 'selected' : '' %>><%= item %></option><% }) %>
-      </select>
-      <button class="btn btn-primary btn-icon-label" type="submit"><svg class="svg-icon" aria-hidden="true"><use href="#icon-search"></use></svg><span>Cari</span></button>
+    <form class="catalog-filter catalog-filter-advanced glass-card" method="get" action="/">
+      <div class="search-input-wrap catalog-search-wide"><svg class="svg-icon" aria-hidden="true"><use href="#icon-search"></use></svg><input type="search" name="q" value="<%= filters.search %>" placeholder="Cari nama, kategori, atau deskripsi..." aria-label="Cari produk"></div>
+      <select name="category" aria-label="Pilih kategori"><option value="">Semua kategori</option><% categories.forEach((item) => { %><option value="<%= item %>" <%= filters.category === item ? 'selected' : '' %>><%= item %></option><% }) %></select>
+      <select name="sort" aria-label="Urutkan produk"><option value="featured" <%= filters.sort === 'featured' ? 'selected' : '' %>>Unggulan</option><option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>Terbaru</option><option value="popular" <%= filters.sort === 'popular' ? 'selected' : '' %>>Terlaris</option><option value="rating" <%= filters.sort === 'rating' ? 'selected' : '' %>>Rating tertinggi</option><option value="price_asc" <%= filters.sort === 'price_asc' ? 'selected' : '' %>>Harga terendah</option><option value="price_desc" <%= filters.sort === 'price_desc' ? 'selected' : '' %>>Harga tertinggi</option></select>
+      <select name="rating" aria-label="Rating minimal"><option value="">Semua rating</option><option value="4" <%= filters.minimumRating === 4 ? 'selected' : '' %>>Minimal 4 bintang</option><option value="3" <%= filters.minimumRating === 3 ? 'selected' : '' %>>Minimal 3 bintang</option><option value="2" <%= filters.minimumRating === 2 ? 'selected' : '' %>>Minimal 2 bintang</option><option value="1" <%= filters.minimumRating === 1 ? 'selected' : '' %>>Minimal 1 bintang</option></select>
+      <input type="number" name="minPrice" min="0" value="<%= filters.minPrice ?? '' %>" placeholder="Harga minimum" aria-label="Harga minimum">
+      <input type="number" name="maxPrice" min="0" value="<%= filters.maxPrice ?? '' %>" placeholder="Harga maksimum" aria-label="Harga maksimum">
+      <label class="check-row catalog-stock-filter"><input type="checkbox" name="availability" value="in_stock" <%= filters.availability === 'in_stock' ? 'checked' : '' %>><span>Stok tersedia</span></label>
+      <div class="catalog-filter-actions"><button class="btn btn-primary btn-icon-label" type="submit"><svg class="svg-icon" aria-hidden="true"><use href="#icon-search"></use></svg><span>Terapkan</span></button><a class="btn btn-ghost" href="/#catalog">Reset</a></div>
     </form>
     <% if (products.length) { %>
       <div class="product-grid">

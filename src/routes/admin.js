@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const crypto = require('crypto');
 const slugify = require('slugify');
 const User = require('../models/User');
@@ -9,15 +10,20 @@ const Review = require('../models/Review');
 const WalletTopup = require('../models/WalletTopup');
 const AdminAuditLog = require('../models/AdminAuditLog');
 const SystemLock = require('../models/SystemLock');
-const { requireAdmin } = require('../middleware/auth');
+const SupportTicket = require('../models/SupportTicket');
+const { requireAdmin, requirePermission } = require('../middleware/auth');
 const noStore = require('../middleware/noStore');
+const { verifyCsrfRequest } = require('../middleware/common');
+const { productAssetUpload, removeUploadedFile } = require('../middleware/productUpload');
 const { completeOrder } = require('../services/orderFulfillment');
 const { cancelPendingOrderSafely } = require('../services/orderCancellation');
 const { adjustWallet } = require('../services/walletService');
 const { toggleReviewPublication } = require('../services/reviewService');
 const { approveWalletTopup, rejectWalletTopup } = require('../services/walletTopupResolution');
+const { createNotification } = require('../services/notificationService');
 const { checkbox, parseDate, parseInteger, parsePage } = require('../utils/input');
 const { ADMIN_PAGE_SIZE } = require('../constants/limits');
+const { ADMIN_PERMISSIONS, normalizePermissions } = require('../constants/adminPermissions');
 const asyncHandler = require('../utils/asyncHandler');
 const { withMongoTransaction } = require('../utils/transaction');
 
@@ -49,7 +55,19 @@ function normalizeImageUrl(value) {
   throw error;
 }
 
-function productPayload(body) {
+function normalizeDigitalUrl(value) {
+  const url = String(value || '').trim();
+  if (!url) return '';
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === 'https:') return parsed.toString();
+  } catch (_) {}
+  const error = new Error('Link file digital harus menggunakan URL HTTPS yang valid.');
+  error.status = 400;
+  throw error;
+}
+
+function productPayload(body, file = null, existingProduct = null) {
   const name = String(body.name || '').trim();
   const slug = slugify(body.slug || name, { lower: true, strict: true, locale: 'id' });
   const description = String(body.description || '').trim();
@@ -58,6 +76,8 @@ function productPayload(body) {
     error.status = 400;
     throw error;
   }
+  const deliveryType = body.deliveryType === 'physical' ? 'physical' : 'digital';
+  const serialKeyEnabled = deliveryType === 'digital' && checkbox(body.serialKeyEnabled);
   const payload = {
     name,
     slug,
@@ -67,15 +87,19 @@ function productPayload(body) {
     imageUrl: normalizeImageUrl(body.imageUrl),
     price: parseInteger(body.price, { name: 'Harga', min: 0, max: 1000000000 }),
     discountPercent: parseInteger(body.discountPercent || 0, { name: 'Diskon', min: 0, max: 100 }),
-    stock: parseInteger(body.stock || 0, { name: 'Stok', min: 0, max: 100000000 }),
+    stock: serialKeyEnabled
+      ? Number(existingProduct?.stock || 0)
+      : parseInteger(body.stock || 0, { name: 'Stok', min: 0, max: 100000000 }),
     isActive: checkbox(body.isActive),
     isFeatured: checkbox(body.isFeatured),
     isFlashSale: checkbox(body.isFlashSale),
     flashSalePrice: parseInteger(body.flashSalePrice, { name: 'Harga flash sale', min: 0, max: 1000000000, nullable: true }),
     flashSaleStart: parseDate(body.flashSaleStart, { name: 'Mulai flash sale', nullable: true }),
     flashSaleEnd: parseDate(body.flashSaleEnd, { name: 'Akhir flash sale', nullable: true }),
-    deliveryType: body.deliveryType === 'physical' ? 'physical' : 'digital',
-    fulfillmentContent: String(body.fulfillmentContent || '').trim()
+    deliveryType,
+    fulfillmentContent: String(body.fulfillmentContent || '').trim(),
+    downloadLimit: parseInteger(body.downloadLimit || 5, { name: 'Batas unduhan', min: 0, max: 1000 }),
+    serialKeyEnabled
   };
   if (payload.shortDescription.length > 220 || payload.category.length > 60 || payload.fulfillmentContent.length > 8000) {
     const error = new Error('Deskripsi singkat, kategori, atau konten fulfillment terlalu panjang.');
@@ -87,6 +111,48 @@ function productPayload(body) {
       const error = new Error('Flash sale aktif memerlukan harga, waktu mulai, dan waktu berakhir yang valid.');
       error.status = 400;
       throw error;
+    }
+  }
+
+  const removeAsset = checkbox(body.removeDigitalAsset);
+  if (deliveryType === 'physical' || removeAsset) {
+    Object.assign(payload, {
+      digitalAssetType: 'none',
+      digitalFilePath: '',
+      digitalFileName: '',
+      digitalFileMime: '',
+      digitalFileSize: 0,
+      digitalFileUrl: ''
+    });
+  } else if (file) {
+    Object.assign(payload, {
+      digitalAssetType: 'local',
+      digitalFilePath: path.relative(path.resolve(__dirname, '../..'), file.path).replace(/\\/g, '/'),
+      digitalFileName: String(file.originalname || 'produk-digital').slice(0, 255),
+      digitalFileMime: String(file.mimetype || 'application/octet-stream').slice(0, 160),
+      digitalFileSize: file.size,
+      digitalFileUrl: ''
+    });
+  } else {
+    const digitalFileUrl = normalizeDigitalUrl(body.digitalFileUrl);
+    if (digitalFileUrl) {
+      Object.assign(payload, {
+        digitalAssetType: 'url',
+        digitalFilePath: '',
+        digitalFileName: String(body.digitalFileName || existingProduct?.digitalFileName || 'Unduh produk').trim().slice(0, 255),
+        digitalFileMime: '',
+        digitalFileSize: 0,
+        digitalFileUrl
+      });
+    } else if (existingProduct) {
+      Object.assign(payload, {
+        digitalAssetType: existingProduct.digitalAssetType || 'none',
+        digitalFilePath: existingProduct.digitalFilePath || '',
+        digitalFileName: existingProduct.digitalFileName || '',
+        digitalFileMime: existingProduct.digitalFileMime || '',
+        digitalFileSize: existingProduct.digitalFileSize || 0,
+        digitalFileUrl: existingProduct.digitalFileUrl || ''
+      });
     }
   }
   return payload;
@@ -140,30 +206,108 @@ router.all('/login', (req, res) => {
 
 router.use(requireAdmin);
 
-router.get('/', asyncHandler(async (req, res) => {
-  const [productCount, userCount, pendingCount, completedCount, revenueAgg, recentOrders] = await Promise.all([
+router.get('/', requirePermission('analytics'), asyncHandler(async (req, res) => {
+  const days = [7, 30, 90].includes(Number(req.query.days)) ? Number(req.query.days) : 30;
+  const endDate = new Date();
+  const startDate = new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000);
+  const previousStart = new Date(startDate.getTime() - days * 24 * 60 * 60 * 1000);
+
+  const [
+    productCount,
+    userCount,
+    newUserCount,
+    pendingCount,
+    completedCount,
+    openTicketCount,
+    revenueAgg,
+    previousRevenueAgg,
+    dailyRevenue,
+    statusBreakdown,
+    topProducts,
+    paymentMethods,
+    recentOrders
+  ] = await Promise.all([
     Product.countDocuments(),
     User.countDocuments(),
+    User.countDocuments({ createdAt: { $gte: startDate } }),
     Order.countDocuments({ status: 'pending' }),
     Order.countDocuments({ status: 'completed' }),
+    SupportTicket.countDocuments({ status: { $in: ['open', 'in_progress'] } }),
     Order.aggregate([
-      { $match: { status: 'completed' } },
+      { $match: { status: 'completed', completedAt: { $gte: startDate } } },
+      { $group: { _id: null, revenue: { $sum: { $add: ['$payableAmount', '$walletUsed'] } }, orders: { $sum: 1 } } }
+    ]),
+    Order.aggregate([
+      { $match: { status: 'completed', completedAt: { $gte: previousStart, $lt: startDate } } },
       { $group: { _id: null, revenue: { $sum: { $add: ['$payableAmount', '$walletUsed'] } } } }
+    ]),
+    Order.aggregate([
+      { $match: { status: 'completed', completedAt: { $gte: startDate } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$completedAt', timezone: 'Asia/Jakarta' } },
+          revenue: { $sum: { $add: ['$payableAmount', '$walletUsed'] } },
+          orders: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]),
+    Order.aggregate([
+      { $match: { createdAt: { $gte: startDate } } },
+      { $group: { _id: '$status', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]),
+    Order.aggregate([
+      { $match: { status: 'completed', completedAt: { $gte: startDate } } },
+      { $unwind: '$items' },
+      {
+        $group: {
+          _id: '$items.product',
+          name: { $first: '$items.name' },
+          quantity: { $sum: '$items.quantity' },
+          revenue: { $sum: '$items.lineTotal' }
+        }
+      },
+      { $sort: { quantity: -1 } },
+      { $limit: 8 }
+    ]),
+    Order.aggregate([
+      { $match: { status: 'completed', completedAt: { $gte: startDate } } },
+      { $group: { _id: { $ifNull: ['$paymentMethod', 'unknown'] }, count: { $sum: 1 }, revenue: { $sum: { $add: ['$payableAmount', '$walletUsed'] } } } },
+      { $sort: { count: -1 } }
     ]),
     Order.find().populate('user', 'name email').sort({ createdAt: -1 }).limit(8).lean()
   ]);
+
+  const revenue = revenueAgg[0]?.revenue || 0;
+  const previousRevenue = previousRevenueAgg[0]?.revenue || 0;
+  const revenueGrowth = previousRevenue > 0
+    ? Math.round(((revenue - previousRevenue) / previousRevenue) * 1000) / 10
+    : revenue > 0 ? 100 : 0;
+  const maxDailyRevenue = Math.max(1, ...dailyRevenue.map((row) => row.revenue));
+
   res.render('admin/dashboard', {
-    title: 'Admin Dashboard',
+    title: 'Dashboard Analitik',
+    days,
     productCount,
     userCount,
+    newUserCount,
     pendingCount,
     completedCount,
-    revenue: revenueAgg[0]?.revenue || 0,
+    openTicketCount,
+    revenue,
+    revenueGrowth,
+    completedInPeriod: revenueAgg[0]?.orders || 0,
+    dailyRevenue,
+    maxDailyRevenue,
+    statusBreakdown,
+    topProducts,
+    paymentMethods,
     recentOrders
   });
 }));
 
-router.get('/products', asyncHandler(async (req, res) => {
+router.get('/products', requirePermission('products'), asyncHandler(async (req, res) => {
   const page = parsePage(req.query.page);
   const [products, total] = await Promise.all([
     Product.find().sort({ createdAt: -1 }).skip((page - 1) * ADMIN_PAGE_SIZE).limit(ADMIN_PAGE_SIZE).lean(),
@@ -172,32 +316,64 @@ router.get('/products', asyncHandler(async (req, res) => {
   res.render('admin/products/index', { title: 'Kelola Produk', products, pagination: pagination(page, total) });
 }));
 
-router.get('/products/new', (req, res) => res.render('admin/products/form', {
+router.get('/products/new', requirePermission('products'), (req, res) => res.render('admin/products/form', {
   title: 'Tambah Produk', product: null, action: '/admin/products'
 }));
 
-router.post('/products', asyncHandler(async (req, res) => {
-  const product = await Product.create(productPayload(req.body));
-  await audit(req, 'product.create', 'Product', product._id, { name: product.name });
-  req.flash('success', 'Produk berhasil ditambahkan.');
-  res.redirect('/admin/products');
-}));
+router.post(
+  '/products',
+  requirePermission('products'),
+  productAssetUpload.single('digitalFile'),
+  verifyCsrfRequest,
+  asyncHandler(async (req, res) => {
+    try {
+      const product = await Product.create(productPayload(req.body, req.file));
+      await audit(req, 'product.create', 'Product', product._id, { name: product.name, digitalAssetType: product.digitalAssetType });
+      req.flash('success', 'Produk berhasil ditambahkan.');
+      res.redirect('/admin/products');
+    } catch (error) {
+      removeUploadedFile(req.file);
+      throw error;
+    }
+  })
+);
 
-router.get('/products/:id/edit', asyncHandler(async (req, res) => {
+router.get('/products/:id/edit', requirePermission('products'), asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id).lean();
   if (!product) return res.sendStatus(404);
   res.render('admin/products/form', { title: 'Edit Produk', product, action: `/admin/products/${product._id}?_method=PUT` });
 }));
 
-router.put('/products/:id', asyncHandler(async (req, res) => {
-  const product = await Product.findByIdAndUpdate(req.params.id, productPayload(req.body), { new: true, runValidators: true });
-  if (!product) return res.sendStatus(404);
-  await audit(req, 'product.update', 'Product', product._id, { name: product.name });
-  req.flash('success', 'Produk berhasil diperbarui.');
-  res.redirect('/admin/products');
-}));
+router.put(
+  '/products/:id',
+  requirePermission('products'),
+  productAssetUpload.single('digitalFile'),
+  verifyCsrfRequest,
+  asyncHandler(async (req, res) => {
+    const existing = await Product.findById(req.params.id);
+    if (!existing) {
+      removeUploadedFile(req.file);
+      return res.sendStatus(404);
+    }
+    try {
+      const payload = productPayload(req.body, req.file, existing);
+      const product = await Product.findByIdAndUpdate(req.params.id, payload, { new: true, runValidators: true });
+      if (product.serialKeyEnabled) {
+        const SerialKey = require('../models/SerialKey');
+        product.stock = await SerialKey.countDocuments({ product: product._id, status: 'available' });
+        await product.save();
+      }
+      await audit(req, 'product.update', 'Product', product._id, { name: product.name, digitalAssetType: product.digitalAssetType });
+      req.flash('success', 'Produk berhasil diperbarui.');
+      res.redirect('/admin/products');
+    } catch (error) {
+      removeUploadedFile(req.file);
+      throw error;
+    }
+  })
+);
 
-router.delete('/products/:id', asyncHandler(async (req, res) => {
+router.delete('/products/:id', requirePermission('products'), asyncHandler(async (req, res) => {
   const product = await Product.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
   if (!product) return res.sendStatus(404);
   await audit(req, 'product.disable', 'Product', product._id, { name: product.name });
@@ -205,7 +381,7 @@ router.delete('/products/:id', asyncHandler(async (req, res) => {
   res.redirect('/admin/products');
 }));
 
-router.get('/vouchers', asyncHandler(async (req, res) => {
+router.get('/vouchers', requirePermission('vouchers'), asyncHandler(async (req, res) => {
   const page = parsePage(req.query.page);
   const [vouchers, total] = await Promise.all([
     Voucher.find().sort({ createdAt: -1 }).skip((page - 1) * ADMIN_PAGE_SIZE).limit(ADMIN_PAGE_SIZE).lean(),
@@ -214,24 +390,24 @@ router.get('/vouchers', asyncHandler(async (req, res) => {
   res.render('admin/vouchers/index', { title: 'Kelola Voucher', vouchers, pagination: pagination(page, total) });
 }));
 
-router.get('/vouchers/new', (req, res) => res.render('admin/vouchers/form', {
+router.get('/vouchers/new', requirePermission('vouchers'), (req, res) => res.render('admin/vouchers/form', {
   title: 'Tambah Voucher', voucher: null, action: '/admin/vouchers'
 }));
 
-router.post('/vouchers', asyncHandler(async (req, res) => {
+router.post('/vouchers', requirePermission('vouchers'), asyncHandler(async (req, res) => {
   const voucher = await Voucher.create(voucherPayload(req.body));
   await audit(req, 'voucher.create', 'Voucher', voucher._id, { code: voucher.code });
   req.flash('success', 'Voucher berhasil ditambahkan.');
   res.redirect('/admin/vouchers');
 }));
 
-router.get('/vouchers/:id/edit', asyncHandler(async (req, res) => {
+router.get('/vouchers/:id/edit', requirePermission('vouchers'), asyncHandler(async (req, res) => {
   const voucher = await Voucher.findById(req.params.id).lean();
   if (!voucher) return res.sendStatus(404);
   res.render('admin/vouchers/form', { title: 'Edit Voucher', voucher, action: `/admin/vouchers/${voucher._id}?_method=PUT` });
 }));
 
-router.put('/vouchers/:id', asyncHandler(async (req, res) => {
+router.put('/vouchers/:id', requirePermission('vouchers'), asyncHandler(async (req, res) => {
   const existing = await Voucher.findById(req.params.id);
   if (!existing) return res.sendStatus(404);
   const payload = voucherPayload(req.body);
@@ -250,7 +426,7 @@ router.put('/vouchers/:id', asyncHandler(async (req, res) => {
   res.redirect('/admin/vouchers');
 }));
 
-router.delete('/vouchers/:id', asyncHandler(async (req, res) => {
+router.delete('/vouchers/:id', requirePermission('vouchers'), asyncHandler(async (req, res) => {
   const voucher = await Voucher.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
   if (!voucher) return res.sendStatus(404);
   await audit(req, 'voucher.disable', 'Voucher', voucher._id, { code: voucher.code });
@@ -258,7 +434,7 @@ router.delete('/vouchers/:id', asyncHandler(async (req, res) => {
   res.redirect('/admin/vouchers');
 }));
 
-router.get('/orders', asyncHandler(async (req, res) => {
+router.get('/orders', requirePermission('orders'), asyncHandler(async (req, res) => {
   const allowedStatuses = new Set(['pending', 'paid', 'completed', 'cancelled', 'expired', 'manual_review']);
   const selectedStatus = allowedStatuses.has(req.query.status) ? req.query.status : '';
   const filter = selectedStatus ? { status: selectedStatus } : {};
@@ -280,7 +456,7 @@ router.get('/orders', asyncHandler(async (req, res) => {
   });
 }));
 
-router.post('/orders/:id/status', asyncHandler(async (req, res) => {
+router.post('/orders/:id/status', requirePermission('orders'), asyncHandler(async (req, res) => {
   const targetStatus = String(req.body.status || '');
   const order = await Order.findById(req.params.id);
   if (!order) return res.sendStatus(404);
@@ -310,6 +486,14 @@ router.post('/orders/:id/status', asyncHandler(async (req, res) => {
     if (targetStatus === 'paid') order.paidAt ||= new Date();
     if (notes) order.notes = `${order.notes || ''}\n${notes}`.trim();
     await order.save();
+    await createNotification({
+      userId: order.user,
+      type: 'order',
+      title: 'Status pesanan diperbarui',
+      message: `Pesanan ${order.orderNumber} sekarang berstatus ${targetStatus}.`,
+      link: `/account/orders/${order.orderNumber}`,
+      idempotencyKey: `order-admin-status:${order.orderNumber}:${targetStatus}:${order.updatedAt.getTime()}`
+    });
   }
 
   await audit(req, 'order.status', 'Order', order._id, { from: previousStatus, to: result.status, orderNumber: order.orderNumber });
@@ -319,7 +503,7 @@ router.post('/orders/:id/status', asyncHandler(async (req, res) => {
   res.redirect('/admin/orders');
 }));
 
-router.get('/users', asyncHandler(async (req, res) => {
+router.get('/users', requirePermission('users'), asyncHandler(async (req, res) => {
   const page = parsePage(req.query.page);
   const [users, total] = await Promise.all([
     User.find().sort({ createdAt: -1 }).skip((page - 1) * ADMIN_PAGE_SIZE).limit(ADMIN_PAGE_SIZE).lean(),
@@ -330,11 +514,12 @@ router.get('/users', asyncHandler(async (req, res) => {
     title: 'Kelola Pengguna',
     users: usersWithTokens,
     currentAdminId: String(req.session.user.id),
+    adminPermissions: ADMIN_PERMISSIONS,
     pagination: pagination(page, total)
   });
 }));
 
-router.post('/users/:id/wallet', asyncHandler(async (req, res) => {
+router.post('/users/:id/wallet', requirePermission('wallet'), asyncHandler(async (req, res) => {
   const amount = parseInteger(req.body.amount, { name: 'Nominal penyesuaian', min: 1, max: 100000000 });
   const type = req.body.type === 'debit' ? 'debit' : 'credit';
   const note = String(req.body.note || 'Penyesuaian oleh admin').trim().slice(0, 500);
@@ -357,7 +542,7 @@ router.post('/users/:id/wallet', asyncHandler(async (req, res) => {
   res.redirect('/admin/users');
 }));
 
-router.post('/users/:id/role', asyncHandler(async (req, res) => {
+router.post('/users/:id/role', requirePermission('users'), asyncHandler(async (req, res) => {
   const targetRole = req.body.role === 'admin' ? 'admin' : 'user';
   const currentAdminId = String(req.session.user.id);
   if (String(req.params.id) === currentAdminId) {
@@ -383,6 +568,9 @@ router.post('/users/:id/role', asyncHandler(async (req, res) => {
 
     const previousRole = user.role;
     user.role = targetRole;
+    user.adminPermissions = targetRole === 'admin'
+      ? (normalizePermissions(req.body.permissions).length ? normalizePermissions(req.body.permissions) : ADMIN_PERMISSIONS.map((item) => item.key))
+      : [];
     user.sessionVersion = Number(user.sessionVersion || 0) + 1;
     await user.save({ session });
     return { user, previousRole };
@@ -398,14 +586,35 @@ router.post('/users/:id/role', asyncHandler(async (req, res) => {
     return res.redirect('/admin/users');
   }
 
-  await audit(req, 'user.role', 'User', result.user._id, { from: result.previousRole, to: result.user.role });
+  await audit(req, 'user.role', 'User', result.user._id, { from: result.previousRole, to: result.user.role, permissions: result.user.adminPermissions });
   req.flash('success', result.user.role === 'admin'
     ? 'Pengguna berhasil dijadikan admin. Sesi aktif akun tersebut telah dicabut agar hak akses diperbarui.'
     : 'Akses admin berhasil dicabut. Sesi aktif akun tersebut telah dicabut.');
   res.redirect('/admin/users');
 }));
 
-router.post('/users/:id/toggle', asyncHandler(async (req, res) => {
+router.post('/users/:id/permissions', requirePermission('users'), asyncHandler(async (req, res) => {
+  if (String(req.params.id) === String(req.session.user.id)) {
+    req.flash('error', 'Permission akun admin yang sedang digunakan tidak dapat diubah dari sesi ini.');
+    return res.redirect('/admin/users');
+  }
+  const permissions = normalizePermissions(req.body.permissions);
+  if (!permissions.length) {
+    req.flash('error', 'Pilih minimal satu permission untuk akun admin.');
+    return res.redirect('/admin/users');
+  }
+  const user = await User.findOneAndUpdate(
+    { _id: req.params.id, role: 'admin' },
+    { $set: { adminPermissions: permissions }, $inc: { sessionVersion: 1 } },
+    { new: true, runValidators: true }
+  );
+  if (!user) return res.sendStatus(404);
+  await audit(req, 'user.permissions', 'User', user._id, { permissions });
+  req.flash('success', 'Permission admin diperbarui. Sesi aktif akun tersebut telah dicabut.');
+  res.redirect('/admin/users');
+}));
+
+router.post('/users/:id/toggle', requirePermission('users'), asyncHandler(async (req, res) => {
   const currentAdminId = String(req.session.user.id);
   if (String(req.params.id) === currentAdminId) {
     req.flash('error', 'Akun yang sedang digunakan tidak dapat dinonaktifkan dari sesi ini.');
@@ -445,7 +654,7 @@ router.post('/users/:id/toggle', asyncHandler(async (req, res) => {
 }));
 
 
-router.get('/topups', asyncHandler(async (req, res) => {
+router.get('/topups', requirePermission('wallet'), asyncHandler(async (req, res) => {
   const allowedStatuses = new Set(['pending', 'processing', 'completed', 'cancelled', 'expired', 'manual_review']);
   const selectedStatus = allowedStatuses.has(req.query.status) ? req.query.status : '';
   const filter = selectedStatus ? { status: selectedStatus } : {};
@@ -463,7 +672,7 @@ router.get('/topups', asyncHandler(async (req, res) => {
   });
 }));
 
-router.post('/topups/:id/resolve', asyncHandler(async (req, res) => {
+router.post('/topups/:id/resolve', requirePermission('wallet'), asyncHandler(async (req, res) => {
   const action = String(req.body.action || '');
   const note = String(req.body.note || '').trim().slice(0, 500);
   if (!['approve', 'reject'].includes(action) || note.length < 5) {
@@ -484,7 +693,7 @@ router.post('/topups/:id/resolve', asyncHandler(async (req, res) => {
   res.redirect('/admin/topups?status=manual_review');
 }));
 
-router.get('/reviews', asyncHandler(async (req, res) => {
+router.get('/reviews', requirePermission('reviews'), asyncHandler(async (req, res) => {
   const page = parsePage(req.query.page);
   const [reviews, total] = await Promise.all([
     Review.find().populate('user', 'name email').populate('product', 'name slug').sort({ createdAt: -1 })
@@ -494,7 +703,7 @@ router.get('/reviews', asyncHandler(async (req, res) => {
   res.render('admin/reviews', { title: 'Moderasi Ulasan', reviews, pagination: pagination(page, total) });
 }));
 
-router.post('/reviews/:id/toggle', asyncHandler(async (req, res) => {
+router.post('/reviews/:id/toggle', requirePermission('reviews'), asyncHandler(async (req, res) => {
   const review = await toggleReviewPublication(req.params.id);
   if (!review) return res.sendStatus(404);
   await audit(req, 'review.toggle', 'Review', review._id, { isPublished: review.isPublished });

@@ -24,13 +24,13 @@
       <div>
         <h4>Bantuan</h4>
         <a href="/#faq">FAQ</a>
-        <a href="mailto:support@example.com">Hubungi Dukungan</a>
+        <a href="<%= currentUser ? '/account/tickets' : '/auth/login' %>">Tiket Bantuan</a>
         <span class="status-dot">Sistem aktif</span>
       </div>
     </div>
     <div class="container footer-bottom">© <%= new Date().getFullYear() %> TokoZyphra. Seluruh hak dilindungi.</div>
   </footer>
-  <script src="/js/app.js?v=20260626-admin-as-user-1" defer></script>
+  <script src="/js/app.js?v=20260626-feature-suite-1" defer></script>
   <% if (enableClientProtection) { %><script src="/js/protect.js" defer></script><% } %>
 </body>
 </html>

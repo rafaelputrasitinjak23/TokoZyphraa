@@ -1,0 +1,11 @@
+<%- include('../partials/header') %>
+<section class="section page-section">
+  <div class="container narrow-wide">
+    <div class="section-heading"><div><span class="eyebrow">LOYALTY</span><h1>Riwayat Poin</h1><p>Poin dari transaksi, referral, dan penukaran saldo.</p></div><a class="btn btn-ghost" href="/account#loyalty">Kembali</a></div>
+    <div class="table-card glass-card"><div class="responsive-table"><table><thead><tr><th>Tanggal</th><th>Sumber</th><th>Catatan</th><th>Poin</th><th>Saldo Akhir</th></tr></thead><tbody>
+      <% transactions.forEach((item) => { %><tr><td><%= formatDate(item.createdAt) %></td><td><%= item.source %></td><td><%= item.note || item.reference %></td><td class="<%= item.type === 'credit' ? 'positive-text' : 'danger-text' %>"><%= item.type === 'credit' ? '+' : '-' %><%= item.points %></td><td><%= item.balanceAfter %></td></tr><% }) %>
+      <% if (!transactions.length) { %><tr><td colspan="5">Belum ada transaksi poin.</td></tr><% } %>
+    </tbody></table></div></div>
+  </div>
+</section>
+<%- include('../partials/footer') %>
