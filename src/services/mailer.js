@@ -48,12 +48,12 @@ async function sendOtpEmail({ email, name, code, ttlMinutes, subject, heading, m
     disableFileAccess: true,
     disableUrlAccess: true,
     html: `
-      <div style="font-family:Arial,sans-serif;background:#0b1020;padding:32px;color:#e5e7eb">
-        <div style="max-width:560px;margin:auto;background:#111827;border:1px solid #26324a;border-radius:20px;padding:28px">
-          <h1 style="margin:0 0 12px;color:#fff">Toko<span style="color:#7c3aed">Rafael</span></h1>
+      <div style="font-family:Arial,sans-serif;background:#1b0d08;padding:32px;color:#e5e7eb">
+        <div style="max-width:560px;margin:auto;background:#111827;border:1px solid #3f2319;border-radius:20px;padding:28px">
+          <h1 style="margin:0 0 12px;color:#fff">Toko<span style="color:#dc2626">Rafael</span></h1>
           <p>Halo <strong>${escapeHtml(name)}</strong>,</p>
           <p>${escapeHtml(heading)}</p>
-          <div style="font-size:34px;font-weight:800;letter-spacing:10px;text-align:center;background:#0f172a;padding:18px;border-radius:14px;color:#a78bfa">${code}</div>
+          <div style="font-size:34px;font-weight:800;letter-spacing:10px;text-align:center;background:#0f172a;padding:18px;border-radius:14px;color:#f97316">${code}</div>
           <p style="color:#94a3b8">Kode berlaku selama ${ttlMinutes} menit dan hanya dapat digunakan satu kali.</p>
           <p style="color:#94a3b8">Abaikan email ini apabila Anda tidak melakukan permintaan tersebut.</p>
         </div>

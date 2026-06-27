@@ -29,7 +29,7 @@ function createCaptchaSvg(code) {
     const startY = randomInteger(18, height - 18);
     const endY = randomInteger(18, height - 18);
     const controlY = randomInteger(10, height - 10);
-    const stroke = index === 0 ? '#a5b4fc' : '#c4b5fd';
+    const stroke = index === 0 ? '#fdba74' : '#fdba74';
 
     return `<path d="M10 ${startY} Q${width / 2} ${controlY} ${width - 10} ${endY}" stroke="${stroke}" stroke-width="2" fill="none" opacity="0.9"/>`;
   }).join('');
