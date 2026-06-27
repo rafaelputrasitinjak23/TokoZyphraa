@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 250" role="img" aria-labelledby="title desc">
+  <title id="title">TokoRafael</title>
+  <desc id="desc">Logo TokoRafael dengan ikon keranjang belanja</desc>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M42 100h47l16 70h108l24-91H94" stroke="#15324c" stroke-width="12"/>
+    <path d="M121 102l17 47h61l13-47" stroke="#ef5b61" stroke-width="10"/>
+    <path d="M137 74v-18M164 69V42M191 75V56" stroke="#ef5b61" stroke-width="8"/>
+    <circle cx="132" cy="195" r="13" stroke="#15324c" stroke-width="10"/>
+    <circle cx="205" cy="195" r="13" stroke="#15324c" stroke-width="10"/>
+    <path d="M30 132H7M40 155H18M52 178H31" stroke="#15324c" stroke-width="8"/>
+  </g>
+  <text x="270" y="167" fill="#15324c" font-family="Inter,Arial,sans-serif" font-size="102" font-weight="800" letter-spacing="2">TOKO</text>
+  <text x="543" y="167" fill="#15324c" font-family="Inter,Arial,sans-serif" font-size="102" font-weight="800" letter-spacing="2">RAFAEL</text>
+  <circle cx="955" cy="148" r="8" fill="#ef5b61"/>
+</svg>

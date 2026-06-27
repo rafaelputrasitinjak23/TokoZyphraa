@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title">
+  <title id="title">TokoRafael</title>
+  <rect width="256" height="256" rx="58" fill="#ffffff"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M36 84h42l15 72h101l23-91H78" stroke="#15324c" stroke-width="14"/>
+    <path d="M105 89l15 43h58l13-43" stroke="#ef5b61" stroke-width="12"/>
+    <path d="M119 65V45M146 62V34M174 68V47" stroke="#ef5b61" stroke-width="9"/>
+    <circle cx="115" cy="187" r="13" stroke="#15324c" stroke-width="11"/>
+    <circle cx="185" cy="187" r="13" stroke="#15324c" stroke-width="11"/>
+  </g>
+</svg>

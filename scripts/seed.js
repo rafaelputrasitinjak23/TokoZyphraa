@@ -81,7 +81,7 @@ async function seed() {
       description: 'Produk gratis untuk mendemonstrasikan checkout tanpa payment gateway.',
       imageUrl: '/images/product-placeholder.svg', price: 0, discountPercent: 0, stock: 1000,
       isActive: true, isFeatured: true, deliveryType: 'digital',
-      fulfillmentContent: 'Terima kasih. Ini adalah contoh konten produk gratis TokoZyphra.'
+      fulfillmentContent: 'Terima kasih. Ini adalah contoh konten produk gratis TokoRafael.'
     }
   ];
 
@@ -90,11 +90,11 @@ async function seed() {
   }
 
   await Voucher.findOneAndUpdate(
-    { code: 'ZYPHRA10' },
+    { code: 'RAFAEL10' },
     {
       $setOnInsert: { usedCount: 0 },
       $set: {
-        description: 'Diskon 10% untuk pengguna TokoZyphra',
+        description: 'Diskon 10% untuk pengguna TokoRafael',
         type: 'percent', value: 10, minPurchase: 25000, maxDiscount: 50000,
         usageLimit: 1000, perUserLimit: 1, startsAt: new Date(now - 86400000),
         expiresAt: new Date(now + 365 * 86400000), isActive: true
