@@ -715,6 +715,8 @@ th { color: #64748b; }
 .wallet-balance-card::after { width: 170px; height: 170px; right: 35px; bottom: -120px; }
 .wallet-card-top { position: relative; z-index: 1; display: flex; align-items: center; gap: 11px; color: #ffedd5; font-size: 13px; font-weight: 700; }
 .wallet-card-logo { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px; background: rgba(255,255,255,.16); backdrop-filter: blur(8px); }
+.wallet-card-brand { width: min(100%, 330px); padding: 8px 12px; border: 1px solid rgba(255,255,255,.42); border-radius: 18px; background: rgba(255,255,255,.92); box-shadow: 0 12px 28px rgba(127,29,29,.16); backdrop-filter: blur(10px); }
+.wallet-card-brand-image { display: block; width: 100%; height: auto; object-fit: contain; }
 .wallet-balance-card > strong { position: relative; z-index: 1; margin-top: 30px; font-size: clamp(32px, 4vw, 47px); letter-spacing: -2px; line-height: 1.1; }
 .wallet-balance-card > p { position: relative; z-index: 1; margin: 9px 0 25px; color: #fed7aa; font-size: 13px; }
 .wallet-card-actions { position: relative; z-index: 1; display: flex; gap: 10px; margin-top: auto; }

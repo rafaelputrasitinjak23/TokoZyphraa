@@ -15,9 +15,15 @@
 
     <div class="wallet-market-grid">
       <article class="wallet-balance-card">
-        <div class="wallet-card-top">
-          <span class="wallet-card-logo"><svg class="svg-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg></span>
-          <span>Saldo aktif</span>
+        <div class="wallet-card-top wallet-card-brand">
+          <img
+            class="wallet-card-brand-image"
+            src="https://athars.space/uploads/4e36610b.png"
+            alt="Dompet TokoRafael"
+            width="866"
+            height="288"
+            decoding="async"
+          >
         </div>
         <strong><%= formatRupiah(user.walletBalance) %></strong>
         <p>Saldo tersedia untuk pembayaran produk di TokoRafael.</p>
