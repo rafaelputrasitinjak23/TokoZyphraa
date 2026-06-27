@@ -1,56 +1,146 @@
 <%- include('../partials/header') %>
-<section class="section page-section">
+<section class="section page-section admin-analytics-page">
   <div class="container">
-    <div class="admin-heading">
-      <div><span class="eyebrow">ADMINISTRATOR</span><h1>Dashboard Analitik</h1><p>Ringkasan performa toko dalam <%= days %> hari terakhir.</p></div>
+    <div class="admin-heading analytics-heading">
+      <div>
+        <span class="eyebrow">ADMINISTRATOR</span>
+        <h1>Dashboard Analitik</h1>
+        <p>Ringkasan performa toko dalam <%= days %> hari terakhir.</p>
+      </div>
       <form method="get" action="/admin" class="period-filter">
-        <select name="days" data-auto-submit><option value="7" <%= days === 7 ? 'selected' : '' %>>7 hari</option><option value="30" <%= days === 30 ? 'selected' : '' %>>30 hari</option><option value="90" <%= days === 90 ? 'selected' : '' %>>90 hari</option></select>
+        <label for="analytics-days">Periode analitik</label>
+        <select id="analytics-days" name="days" data-auto-submit>
+          <option value="7" <%= days === 7 ? 'selected' : '' %>>7 hari terakhir</option>
+          <option value="30" <%= days === 30 ? 'selected' : '' %>>30 hari terakhir</option>
+          <option value="90" <%= days === 90 ? 'selected' : '' %>>90 hari terakhir</option>
+        </select>
       </form>
     </div>
 
     <div class="stats-grid admin-analytics-stats">
-      <div class="stat-card glass-card"><span>Omzet periode</span><strong><%= formatRupiah(revenue) %></strong><small class="<%= revenueGrowth >= 0 ? 'positive-text' : 'danger-text' %>"><%= revenueGrowth >= 0 ? '+' : '' %><%= revenueGrowth %>% vs periode sebelumnya</small></div>
-      <div class="stat-card glass-card"><span>Pesanan selesai</span><strong><%= completedInPeriod %></strong><small><%= completedCount %> selesai sepanjang waktu</small></div>
-      <div class="stat-card glass-card"><span>Pengguna baru</span><strong><%= newUserCount %></strong><small><%= userCount %> total pengguna</small></div>
-      <div class="stat-card glass-card"><span>Menunggu pembayaran</span><strong><%= pendingCount %></strong><small>Perlu dipantau</small></div>
-      <div class="stat-card glass-card"><span>Tiket aktif</span><strong><%= openTicketCount %></strong><small>Open dan in progress</small></div>
-      <div class="stat-card glass-card"><span>Total produk</span><strong><%= productCount %></strong><small>Aktif dan nonaktif</small></div>
+      <article class="stat-card glass-card analytics-stat-card analytics-stat-primary">
+        <span>Omzet periode</span>
+        <strong><%= formatRupiah(revenue) %></strong>
+        <small class="<%= revenueGrowth >= 0 ? 'positive-text' : 'danger-text' %>"><%= revenueGrowth >= 0 ? '+' : '' %><%= revenueGrowth %>% vs periode sebelumnya</small>
+      </article>
+      <article class="stat-card glass-card analytics-stat-card">
+        <span>Pesanan selesai</span>
+        <strong><%= completedInPeriod %></strong>
+        <small><%= completedCount %> selesai sepanjang waktu</small>
+      </article>
+      <article class="stat-card glass-card analytics-stat-card">
+        <span>Pengguna baru</span>
+        <strong><%= newUserCount %></strong>
+        <small><%= userCount %> total pengguna</small>
+      </article>
+      <article class="stat-card glass-card analytics-stat-card">
+        <span>Menunggu pembayaran</span>
+        <strong><%= pendingCount %></strong>
+        <small>Perlu dipantau</small>
+      </article>
+      <article class="stat-card glass-card analytics-stat-card">
+        <span>Tiket aktif</span>
+        <strong><%= openTicketCount %></strong>
+        <small>Open dan in progress</small>
+      </article>
+      <article class="stat-card glass-card analytics-stat-card">
+        <span>Total produk</span>
+        <strong><%= productCount %></strong>
+        <small>Aktif dan nonaktif</small>
+      </article>
     </div>
 
-    <div class="analytics-grid">
-      <section class="analytics-panel glass-card analytics-wide">
-        <div class="panel-heading"><div><span class="eyebrow">OMZET HARIAN</span><h2>Tren penjualan</h2></div></div>
-        <% if (dailyRevenue.length) { %>
-          <div class="revenue-bars">
-            <% dailyRevenue.forEach((row) => { %>
-              <div class="revenue-bar-row"><span><%= row._id.slice(5) %></span><div class="revenue-bar-track"><i style="width:<%= Math.max(3, Math.round((row.revenue / maxDailyRevenue) * 100)) %>%"></i></div><strong><%= formatRupiah(row.revenue) %></strong><small><%= row.orders %> order</small></div>
-            <% }) %>
+    <div class="analytics-grid analytics-main-grid">
+      <section class="analytics-panel glass-card analytics-wide sales-chart-panel">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">OMZET HARIAN</span>
+            <h2>Grafik penjualan</h2>
+            <p>Omzet dari pesanan yang telah selesai.</p>
           </div>
-        <% } else { %><div class="empty-state compact-empty"><p>Belum ada omzet terverifikasi pada periode ini.</p></div><% } %>
+          <span class="chart-period-badge"><%= days %> hari</span>
+        </div>
+        <% if (dailyRevenue.length) { %>
+          <div class="sales-chart-wrap">
+            <canvas id="sales-chart" aria-label="Grafik omzet penjualan harian" role="img"></canvas>
+          </div>
+          <div class="chart-legend-note"><span></span>Omzet terverifikasi per hari</div>
+        <% } else { %>
+          <div class="empty-state compact-empty"><p>Belum ada omzet terverifikasi pada periode ini.</p></div>
+        <% } %>
       </section>
 
       <section class="analytics-panel glass-card">
-        <div class="panel-heading"><div><span class="eyebrow">STATUS</span><h2>Distribusi pesanan</h2></div></div>
-        <div class="metric-list"><% statusBreakdown.forEach((row) => { %><div><span><span class="status-pill status-<%= row._id %>"><%= row._id %></span></span><strong><%= row.count %></strong></div><% }) %><% if (!statusBreakdown.length) { %><p>Belum ada data.</p><% } %></div>
+        <div class="panel-heading">
+          <div><span class="eyebrow">STATUS</span><h2>Distribusi pesanan</h2></div>
+        </div>
+        <div class="metric-list status-metric-list">
+          <% statusBreakdown.forEach((row) => { %>
+            <div><span><span class="status-pill status-<%= row._id %>"><%= row._id %></span></span><strong><%= row.count %></strong></div>
+          <% }) %>
+          <% if (!statusBreakdown.length) { %><p>Belum ada data.</p><% } %>
+        </div>
       </section>
 
       <section class="analytics-panel glass-card">
-        <div class="panel-heading"><div><span class="eyebrow">PEMBAYARAN</span><h2>Metode terpopuler</h2></div></div>
-        <div class="metric-list"><% paymentMethods.forEach((row) => { %><div><span><%= row._id %></span><strong><%= row.count %> transaksi</strong><small><%= formatRupiah(row.revenue) %></small></div><% }) %><% if (!paymentMethods.length) { %><p>Belum ada data.</p><% } %></div>
+        <div class="panel-heading">
+          <div><span class="eyebrow">PEMBAYARAN</span><h2>Metode terpopuler</h2></div>
+        </div>
+        <div class="metric-list">
+          <% paymentMethods.forEach((row) => { %>
+            <div><span><%= row._id %></span><strong><%= row.count %> transaksi</strong><small><%= formatRupiah(row.revenue) %></small></div>
+          <% }) %>
+          <% if (!paymentMethods.length) { %><p>Belum ada data.</p><% } %>
+        </div>
       </section>
     </div>
 
-    <div class="analytics-grid">
+    <div class="analytics-grid analytics-secondary-grid">
       <section class="analytics-panel glass-card">
-        <div class="panel-heading"><div><span class="eyebrow">PRODUK</span><h2>Produk terlaris</h2></div><a href="/admin/products">Kelola</a></div>
-        <div class="metric-list"><% topProducts.forEach((row, index) => { %><div><span><b>#<%= index + 1 %></b> <%= row.name %></span><strong><%= row.quantity %> terjual</strong><small><%= formatRupiah(row.revenue) %></small></div><% }) %><% if (!topProducts.length) { %><p>Belum ada data.</p><% } %></div>
+        <div class="panel-heading">
+          <div><span class="eyebrow">PRODUK</span><h2>Produk terlaris</h2></div>
+          <a href="/admin/products">Kelola</a>
+        </div>
+        <div class="metric-list top-product-list">
+          <% topProducts.forEach((row, index) => { %>
+            <div><span><b>#<%= index + 1 %></b> <%= row.name %></span><strong><%= row.quantity %> terjual</strong><small><%= formatRupiah(row.revenue) %></small></div>
+          <% }) %>
+          <% if (!topProducts.length) { %><p>Belum ada data.</p><% } %>
+        </div>
       </section>
 
-      <section class="analytics-panel glass-card analytics-wide">
-        <div class="panel-heading"><div><span class="eyebrow">TERBARU</span><h2>Pesanan terbaru</h2></div><a href="/admin/orders">Kelola semua</a></div>
-        <div class="responsive-table"><table><thead><tr><th>Pesanan</th><th>Pengguna</th><th>Nilai</th><th>Status</th><th>Tanggal</th></tr></thead><tbody><% recentOrders.forEach((order) => { %><tr><td><%= order.orderNumber %></td><td><%= order.user?.name || '-' %><small class="table-sub"><%= order.user?.email || '' %></small></td><td><%= formatRupiah(Number(order.payableAmount || 0) + Number(order.walletUsed || 0)) %></td><td><span class="status-pill status-<%= order.status %>"><%= order.status %></span></td><td><%= formatDate(order.createdAt) %></td></tr><% }) %></tbody></table></div>
+      <section class="analytics-panel glass-card analytics-wide recent-orders-panel">
+        <div class="panel-heading">
+          <div><span class="eyebrow">TERBARU</span><h2>Pesanan terbaru</h2></div>
+          <a href="/admin/orders">Kelola semua</a>
+        </div>
+        <% if (recentOrders.length) { %>
+          <div class="responsive-table analytics-order-table">
+            <table>
+              <thead><tr><th>Pesanan</th><th>Pengguna</th><th>Nilai</th><th>Status</th><th>Tanggal</th></tr></thead>
+              <tbody>
+                <% recentOrders.forEach((order) => { %>
+                  <tr>
+                    <td data-label="Pesanan"><strong><%= order.orderNumber %></strong></td>
+                    <td data-label="Pengguna"><%= order.user?.name || '-' %><small class="table-sub"><%= order.user?.email || '' %></small></td>
+                    <td data-label="Nilai"><%= formatRupiah(Number(order.payableAmount || 0) + Number(order.walletUsed || 0)) %></td>
+                    <td data-label="Status"><span class="status-pill status-<%= order.status %>"><%= order.status %></span></td>
+                    <td data-label="Tanggal"><%= formatDate(order.createdAt) %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } else { %>
+          <div class="empty-state compact-empty"><p>Belum ada pesanan.</p></div>
+        <% } %>
       </section>
     </div>
   </div>
 </section>
+<% if (dailyRevenue.length) { %>
+  <script id="sales-chart-data" type="application/json"><%- salesChartJson %></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
+  <script src="/js/admin-dashboard.js?v=20260627-analytics-1" defer></script>
+<% } %>
 <%- include('../partials/footer') %>

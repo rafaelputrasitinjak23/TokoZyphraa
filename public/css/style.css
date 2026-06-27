@@ -2609,3 +2609,270 @@ th { color: #64748b; }
     font-size: 10px;
   }
 }
+
+/* Password recovery and responsive analytics dashboard */
+.auth-form-meta {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+}
+
+.auth-form-meta a {
+  color: #6d28d9;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.analytics-heading > div > p {
+  margin: 8px 0 0;
+  color: #64748b;
+}
+
+.period-filter {
+  display: grid;
+  gap: 7px;
+  min-width: 190px;
+}
+
+.period-filter label {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.period-filter select {
+  width: 100%;
+}
+
+.analytics-stat-card {
+  min-width: 0;
+}
+
+.analytics-stat-card strong {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.analytics-panel {
+  min-width: 0;
+  border-radius: 20px;
+}
+
+.panel-heading p {
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.chart-period-badge {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.sales-chart-wrap {
+  position: relative;
+  width: 100%;
+  height: 330px;
+}
+
+.chart-legend-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.chart-legend-note span {
+  width: 22px;
+  height: 3px;
+  border-radius: 999px;
+  background: #4f46e5;
+}
+
+.analytics-order-table td:first-child strong {
+  color: #312e81;
+}
+
+.top-product-list > div > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 800px) {
+  .admin-analytics-page {
+    padding-top: 32px;
+  }
+
+  .analytics-heading {
+    gap: 18px;
+    margin-bottom: 22px;
+  }
+
+  .analytics-heading h1 {
+    font-size: clamp(30px, 9vw, 40px);
+    line-height: 1.05;
+  }
+
+  .period-filter {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .admin-analytics-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .admin-analytics-stats .analytics-stat-card {
+    min-height: 118px;
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .admin-analytics-stats .analytics-stat-card strong {
+    margin-top: 8px;
+    font-size: clamp(20px, 6vw, 26px);
+    line-height: 1.1;
+  }
+
+  .analytics-stat-primary,
+  .admin-analytics-stats .analytics-stat-card:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .analytics-stat-primary strong {
+    font-size: clamp(25px, 8vw, 32px) !important;
+  }
+
+  .analytics-grid {
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .analytics-panel {
+    padding: 18px;
+    border-radius: 17px;
+  }
+
+  .panel-heading {
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .panel-heading h2 {
+    font-size: 20px;
+  }
+
+  .sales-chart-wrap {
+    height: 250px;
+  }
+
+  .metric-list > div {
+    gap: 6px 10px;
+    padding: 11px 0;
+  }
+
+  .metric-list > div > strong {
+    text-align: right;
+  }
+
+  .analytics-order-table {
+    overflow: visible;
+  }
+
+  .analytics-order-table table,
+  .analytics-order-table tbody,
+  .analytics-order-table tr,
+  .analytics-order-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .analytics-order-table thead {
+    display: none;
+  }
+
+  .analytics-order-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .analytics-order-table tr {
+    padding: 10px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    background: #ffffff;
+  }
+
+  .analytics-order-table td {
+    display: grid;
+    grid-template-columns: 78px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+    padding: 9px 0;
+    border: 0;
+    border-bottom: 1px solid #eef2f7;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  .analytics-order-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .analytics-order-table td::before {
+    content: attr(data-label);
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .analytics-order-table .table-sub {
+    display: block;
+    margin-top: 3px;
+  }
+
+  .analytics-order-table .status-pill {
+    justify-self: end;
+  }
+}
+
+@media (max-width: 420px) {
+  .admin-analytics-stats .analytics-stat-card {
+    padding: 14px;
+  }
+
+  .admin-analytics-stats .analytics-stat-card span,
+  .admin-analytics-stats .analytics-stat-card small {
+    font-size: 10px;
+  }
+
+  .analytics-panel {
+    padding: 16px;
+  }
+
+  .sales-chart-wrap {
+    height: 220px;
+  }
+
+  .chart-period-badge {
+    padding: 6px 8px;
+  }
+
+  .analytics-order-table td {
+    grid-template-columns: 70px minmax(0, 1fr);
+    gap: 8px;
+  }
+}

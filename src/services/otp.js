@@ -1,15 +1,15 @@
 const crypto = require('crypto');
 const Otp = require('../models/Otp');
-const { sendRegistrationOtp } = require('./mailer');
+const { sendRegistrationOtp, sendPasswordResetOtp } = require('./mailer');
 
 function hashOtp(code) {
   return crypto.createHmac('sha256', process.env.SESSION_SECRET).update(String(code)).digest('hex');
 }
 
-async function issueRegistrationOtp({ email, name }) {
+async function issueOtp({ email, purpose, send }) {
   const ttlMinutes = Number(process.env.OTP_TTL_MINUTES || 10);
   const resendSeconds = Number(process.env.OTP_RESEND_SECONDS || 60);
-  const existing = await Otp.findOne({ email, purpose: 'register' }).lean();
+  const existing = await Otp.findOne({ email, purpose }).lean();
 
   if (existing?.lastSentAt && Date.now() - new Date(existing.lastSentAt).getTime() < resendSeconds * 1000) {
     const wait = Math.ceil((resendSeconds * 1000 - (Date.now() - new Date(existing.lastSentAt).getTime())) / 1000);
@@ -20,7 +20,7 @@ async function issueRegistrationOtp({ email, name }) {
 
   const code = String(crypto.randomInt(100000, 1000000));
   await Otp.findOneAndUpdate(
-    { email, purpose: 'register' },
+    { email, purpose },
     {
       codeHash: hashOtp(code),
       attempts: 0,
@@ -31,17 +31,17 @@ async function issueRegistrationOtp({ email, name }) {
   );
 
   try {
-    await sendRegistrationOtp({ email, name, code, ttlMinutes });
+    await send({ code, ttlMinutes });
   } catch (error) {
-    await Otp.deleteOne({ email, purpose: 'register' });
+    await Otp.deleteOne({ email, purpose });
     throw error;
   }
 }
 
-async function verifyRegistrationOtp(email, code) {
-  const record = await Otp.findOne({ email, purpose: 'register' });
+async function verifyOtp(email, purpose, code) {
+  const record = await Otp.findOne({ email, purpose });
   if (!record || record.expiresAt < new Date()) {
-    await Otp.deleteOne({ email, purpose: 'register' });
+    await Otp.deleteOne({ email, purpose });
     return { ok: false, reason: 'Kode OTP kedaluwarsa atau tidak ditemukan.' };
   }
   if (record.attempts >= 5) return { ok: false, reason: 'Terlalu banyak percobaan OTP. Minta kode baru.' };
@@ -49,7 +49,10 @@ async function verifyRegistrationOtp(email, code) {
   const normalizedCode = String(code || '').trim();
   if (!/^\d{6}$/.test(normalizedCode)) return { ok: false, reason: 'Kode OTP harus terdiri dari 6 angka.' };
   const supplied = hashOtp(normalizedCode);
-  const valid = crypto.timingSafeEqual(Buffer.from(supplied, 'hex'), Buffer.from(record.codeHash, 'hex'));
+  const suppliedBuffer = Buffer.from(supplied, 'hex');
+  const expectedBuffer = Buffer.from(record.codeHash, 'hex');
+  const valid = suppliedBuffer.length === expectedBuffer.length
+    && crypto.timingSafeEqual(suppliedBuffer, expectedBuffer);
 
   if (!valid) {
     record.attempts += 1;
@@ -61,4 +64,33 @@ async function verifyRegistrationOtp(email, code) {
   return { ok: true };
 }
 
-module.exports = { issueRegistrationOtp, verifyRegistrationOtp };
+function issueRegistrationOtp({ email, name }) {
+  return issueOtp({
+    email,
+    purpose: 'register',
+    send: ({ code, ttlMinutes }) => sendRegistrationOtp({ email, name, code, ttlMinutes })
+  });
+}
+
+function verifyRegistrationOtp(email, code) {
+  return verifyOtp(email, 'register', code);
+}
+
+function issuePasswordResetOtp({ email, name }) {
+  return issueOtp({
+    email,
+    purpose: 'password_reset',
+    send: ({ code, ttlMinutes }) => sendPasswordResetOtp({ email, name, code, ttlMinutes })
+  });
+}
+
+function verifyPasswordResetOtp(email, code) {
+  return verifyOtp(email, 'password_reset', code);
+}
+
+module.exports = {
+  issueRegistrationOtp,
+  verifyRegistrationOtp,
+  issuePasswordResetOtp,
+  verifyPasswordResetOtp
+};

@@ -41,6 +41,55 @@ function pagination(page, total, query = {}) {
   return { page, totalPages: Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE)), query };
 }
 
+const jakartaDatePartsFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'Asia/Jakarta',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit'
+});
+const jakartaDateLabelFormatter = new Intl.DateTimeFormat('id-ID', {
+  timeZone: 'Asia/Jakarta',
+  day: '2-digit',
+  month: 'short'
+});
+
+function jakartaDateParts(date) {
+  return Object.fromEntries(
+    jakartaDatePartsFormatter.formatToParts(date)
+      .filter((part) => part.type !== 'literal')
+      .map((part) => [part.type, part.value])
+  );
+}
+
+function jakartaDateKey(date) {
+  const parts = jakartaDateParts(date);
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function jakartaDayStart(date) {
+  const parts = jakartaDateParts(date);
+  return new Date(Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day)
+  ) - 7 * 60 * 60 * 1000);
+}
+
+function buildDailySalesSeries(rows, days, endDate) {
+  const rowMap = new Map(rows.map((row) => [row._id, row]));
+  return Array.from({ length: days }, (_, index) => {
+    const date = new Date(endDate.getTime() - (days - 1 - index) * 24 * 60 * 60 * 1000);
+    const key = jakartaDateKey(date);
+    const row = rowMap.get(key);
+    return {
+      date: key,
+      label: jakartaDateLabelFormatter.format(date),
+      revenue: Number(row?.revenue || 0),
+      orders: Number(row?.orders || 0)
+    };
+  });
+}
+
 function normalizeImageUrl(value) {
   const imageUrl = String(value || '/images/product-placeholder.svg').trim();
   if (imageUrl.startsWith('/')) return imageUrl;
@@ -182,8 +231,9 @@ router.use(requireAdmin);
 router.get('/', requirePermission('analytics'), asyncHandler(async (req, res) => {
   const days = [7, 30, 90].includes(Number(req.query.days)) ? Number(req.query.days) : 30;
   const endDate = new Date();
-  const startDate = new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000);
-  const previousStart = new Date(startDate.getTime() - days * 24 * 60 * 60 * 1000);
+  const dayMs = 24 * 60 * 60 * 1000;
+  const startDate = new Date(jakartaDayStart(endDate).getTime() - (days - 1) * dayMs);
+  const previousStart = new Date(startDate.getTime() - days * dayMs);
 
   const [
     productCount,
@@ -257,7 +307,8 @@ router.get('/', requirePermission('analytics'), asyncHandler(async (req, res) =>
   const revenueGrowth = previousRevenue > 0
     ? Math.round(((revenue - previousRevenue) / previousRevenue) * 1000) / 10
     : revenue > 0 ? 100 : 0;
-  const maxDailyRevenue = Math.max(1, ...dailyRevenue.map((row) => row.revenue));
+  const dailySalesSeries = buildDailySalesSeries(dailyRevenue, days, endDate);
+  const salesChartJson = JSON.stringify(dailySalesSeries).replace(/</g, '\\u003c');
 
   res.render('admin/dashboard', {
     title: 'Dashboard Analitik',
@@ -272,7 +323,7 @@ router.get('/', requirePermission('analytics'), asyncHandler(async (req, res) =>
     revenueGrowth,
     completedInPeriod: revenueAgg[0]?.orders || 0,
     dailyRevenue,
-    maxDailyRevenue,
+    salesChartJson,
     statusBreakdown,
     topProducts,
     paymentMethods,

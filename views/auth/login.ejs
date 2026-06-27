@@ -2,12 +2,13 @@
 <section class="auth-section">
   <div class="auth-card glass-card">
     <%- include('../partials/auth-logo') %>
-    <div class="auth-heading"><span class="eyebrow">SELAMAT DATANG</span><h1>Masuk ke akun</h1><p></p></div>
+    <div class="auth-heading"><span class="eyebrow">SELAMAT DATANG</span><h1>Masuk ke akun</h1><p>Gunakan email dan kata sandi akun TokoZyphra. Halaman akan terbuka sesuai akses akun Anda.</p></div>
     <form method="post" action="/auth/login" class="form-stack">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <input type="hidden" name="next" value="<%= next %>">
       <label>Email<input type="email" name="email" required autocomplete="email" placeholder="nama@email.com"></label>
       <label>Kata sandi<input type="password" name="password" required autocomplete="current-password" placeholder="Kata sandi Anda"></label>
+      <div class="auth-form-meta"><a href="/auth/forgot-password">Lupa kata sandi?</a></div>
       <div class="captcha-block">
         <div class="captcha-preview-row">
           <div class="captcha-image"><img src="/auth/captcha/login.svg" alt="Kode CAPTCHA login"></div>
