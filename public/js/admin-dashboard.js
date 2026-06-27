@@ -14,8 +14,8 @@
 
   const context = canvas.getContext('2d');
   const gradient = context.createLinearGradient(0, 0, 0, 300);
-  gradient.addColorStop(0, 'rgba(79, 70, 229, 0.34)');
-  gradient.addColorStop(1, 'rgba(79, 70, 229, 0.03)');
+  gradient.addColorStop(0, 'rgba(249, 115, 22, 0.34)');
+  gradient.addColorStop(1, 'rgba(249, 115, 22, 0.03)');
 
   const rupiah = new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -37,23 +37,23 @@
         label: 'Omzet',
         data: revenues,
         backgroundColor: gradient,
-        borderColor: '#4f46e5',
+        borderColor: '#f97316',
         borderWidth: 1.5,
         borderRadius: 7,
         borderSkipped: false,
         maxBarThickness: 18,
-        hoverBackgroundColor: 'rgba(79, 70, 229, 0.72)'
+        hoverBackgroundColor: 'rgba(249, 115, 22, 0.72)'
       }
     : {
         label: 'Omzet',
         data: revenues,
-        borderColor: '#4f46e5',
+        borderColor: '#f97316',
         backgroundColor: gradient,
         borderWidth: 2.5,
         pointRadius: 0,
         pointHoverRadius: 5,
         pointBackgroundColor: '#ffffff',
-        pointBorderColor: '#4f46e5',
+        pointBorderColor: '#f97316',
         pointBorderWidth: 2,
         fill: true,
         tension: 0.28
