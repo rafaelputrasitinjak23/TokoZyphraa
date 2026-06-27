@@ -3303,3 +3303,135 @@ th { color: #64748b; }
     font-size: 10px;
   }
 }
+
+/* TokoRafael opening animation */
+.site-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: none;
+  place-items: center;
+  overflow: hidden;
+  background: #f2f3f3;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity .48s ease, visibility .48s ease;
+}
+
+html.site-intro-enabled,
+html.site-intro-enabled body {
+  overflow: hidden;
+}
+
+html.site-intro-enabled .site-intro {
+  display: grid;
+}
+
+.site-intro.is-leaving {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.site-intro-video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  background: #f2f3f3;
+  transform: scale(1);
+  transition: transform .52s ease;
+}
+
+.site-intro.is-leaving .site-intro-video {
+  transform: scale(.985);
+}
+
+.site-intro-skip {
+  position: absolute;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 9px 15px;
+  border: 1px solid rgba(185, 28, 28, .18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .88);
+  color: #991b1b;
+  box-shadow: 0 12px 34px rgba(127, 29, 29, .13);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: site-intro-skip-in .35s ease .7s forwards;
+}
+
+.site-intro-skip:hover,
+.site-intro-skip:focus-visible {
+  border-color: rgba(234, 88, 12, .42);
+  background: #ffffff;
+  color: #c2410c;
+  outline: none;
+}
+
+.site-intro-progress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, .46);
+}
+
+.site-intro-progress span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background: linear-gradient(90deg, #dc2626, #f97316);
+}
+
+.site-intro.is-playing .site-intro-progress span {
+  animation: site-intro-progress 10s linear forwards;
+}
+
+@keyframes site-intro-progress {
+  to { transform: scaleX(1); }
+}
+
+@keyframes site-intro-skip-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 600px) {
+  .site-intro-video {
+    width: 100vw;
+    height: 100dvh;
+  }
+
+  .site-intro-skip {
+    right: max(14px, env(safe-area-inset-right));
+    bottom: max(16px, env(safe-area-inset-bottom));
+    min-height: 40px;
+    padding: 8px 13px;
+    font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.site-intro-enabled .site-intro {
+    display: none;
+  }
+}
