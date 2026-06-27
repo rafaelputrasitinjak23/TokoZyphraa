@@ -1,8 +1,8 @@
 <%- include('../partials/header') %>
 <section class="section page-section admin-analytics-page">
-  <div class="container">
+  <div class="container analytics-container">
     <div class="admin-heading analytics-heading">
-      <div>
+      <div class="analytics-heading-copy">
         <span class="eyebrow">ADMINISTRATOR</span>
         <h1>Dashboard Analitik</h1>
         <p>Ringkasan performa toko dalam <%= days %> hari terakhir.</p>
@@ -43,16 +43,16 @@
         <strong><%= openTicketCount %></strong>
         <small>Open dan in progress</small>
       </article>
-      <article class="stat-card glass-card analytics-stat-card">
+      <article class="stat-card glass-card analytics-stat-card analytics-stat-product">
         <span>Total produk</span>
         <strong><%= productCount %></strong>
         <small>Aktif dan nonaktif</small>
       </article>
     </div>
 
-    <div class="analytics-grid analytics-main-grid">
-      <section class="analytics-panel glass-card analytics-wide sales-chart-panel">
-        <div class="panel-heading">
+    <div class="analytics-overview-grid">
+      <section class="analytics-panel glass-card sales-chart-panel">
+        <div class="panel-heading chart-panel-heading">
           <div>
             <span class="eyebrow">OMZET HARIAN</span>
             <h2>Grafik penjualan</h2>
@@ -60,6 +60,18 @@
           </div>
           <span class="chart-period-badge"><%= days %> hari</span>
         </div>
+
+        <div class="chart-summary-row" aria-label="Ringkasan grafik penjualan">
+          <div>
+            <span>Total omzet</span>
+            <strong><%= formatRupiah(revenue) %></strong>
+          </div>
+          <div>
+            <span>Pesanan selesai</span>
+            <strong><%= completedInPeriod %></strong>
+          </div>
+        </div>
+
         <% if (dailyRevenue.length) { %>
           <div class="sales-chart-wrap">
             <canvas id="sales-chart" aria-label="Grafik omzet penjualan harian" role="img"></canvas>
@@ -70,33 +82,35 @@
         <% } %>
       </section>
 
-      <section class="analytics-panel glass-card">
-        <div class="panel-heading">
-          <div><span class="eyebrow">STATUS</span><h2>Distribusi pesanan</h2></div>
-        </div>
-        <div class="metric-list status-metric-list">
-          <% statusBreakdown.forEach((row) => { %>
-            <div><span><span class="status-pill status-<%= row._id %>"><%= row._id %></span></span><strong><%= row.count %></strong></div>
-          <% }) %>
-          <% if (!statusBreakdown.length) { %><p>Belum ada data.</p><% } %>
-        </div>
-      </section>
+      <div class="analytics-side-stack">
+        <section class="analytics-panel glass-card compact-analytics-panel">
+          <div class="panel-heading">
+            <div><span class="eyebrow">STATUS</span><h2>Distribusi pesanan</h2></div>
+          </div>
+          <div class="metric-list status-metric-list">
+            <% statusBreakdown.forEach((row) => { %>
+              <div><span><span class="status-pill status-<%= row._id %>"><%= row._id %></span></span><strong><%= row.count %></strong></div>
+            <% }) %>
+            <% if (!statusBreakdown.length) { %><p>Belum ada data.</p><% } %>
+          </div>
+        </section>
 
-      <section class="analytics-panel glass-card">
-        <div class="panel-heading">
-          <div><span class="eyebrow">PEMBAYARAN</span><h2>Metode terpopuler</h2></div>
-        </div>
-        <div class="metric-list">
-          <% paymentMethods.forEach((row) => { %>
-            <div><span><%= row._id %></span><strong><%= row.count %> transaksi</strong><small><%= formatRupiah(row.revenue) %></small></div>
-          <% }) %>
-          <% if (!paymentMethods.length) { %><p>Belum ada data.</p><% } %>
-        </div>
-      </section>
+        <section class="analytics-panel glass-card compact-analytics-panel">
+          <div class="panel-heading">
+            <div><span class="eyebrow">PEMBAYARAN</span><h2>Metode terpopuler</h2></div>
+          </div>
+          <div class="metric-list payment-metric-list">
+            <% paymentMethods.forEach((row) => { %>
+              <div><span><%= row._id %></span><strong><%= row.count %> transaksi</strong><small><%= formatRupiah(row.revenue) %></small></div>
+            <% }) %>
+            <% if (!paymentMethods.length) { %><p>Belum ada data.</p><% } %>
+          </div>
+        </section>
+      </div>
     </div>
 
-    <div class="analytics-grid analytics-secondary-grid">
-      <section class="analytics-panel glass-card">
+    <div class="analytics-bottom-grid">
+      <section class="analytics-panel glass-card compact-analytics-panel">
         <div class="panel-heading">
           <div><span class="eyebrow">PRODUK</span><h2>Produk terlaris</h2></div>
           <a href="/admin/products">Kelola</a>
@@ -109,7 +123,7 @@
         </div>
       </section>
 
-      <section class="analytics-panel glass-card analytics-wide recent-orders-panel">
+      <section class="analytics-panel glass-card recent-orders-panel">
         <div class="panel-heading">
           <div><span class="eyebrow">TERBARU</span><h2>Pesanan terbaru</h2></div>
           <a href="/admin/orders">Kelola semua</a>
@@ -141,6 +155,6 @@
 <% if (dailyRevenue.length) { %>
   <script id="sales-chart-data" type="application/json"><%- salesChartJson %></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
-  <script src="/js/admin-dashboard.js?v=20260627-analytics-1" defer></script>
+  <script src="/js/admin-dashboard.js?v=20260627-analytics-2" defer></script>
 <% } %>
 <%- include('../partials/footer') %>
