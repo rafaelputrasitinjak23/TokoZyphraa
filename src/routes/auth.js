@@ -162,7 +162,7 @@ router.post('/verify-registration', requireGuest, authLimiter, asyncHandler(asyn
 
   await regenerateSession(req);
   req.session.user = sessionUser(user);
-  req.flash('success', 'Registrasi berhasil. Selamat datang di TokoZyphra.');
+  req.flash('success', 'Registrasi berhasil. Selamat datang di TokoRafael.');
   res.redirect('/account');
 }));
 

@@ -69,7 +69,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
 }));
 
 app.get(['/health', '/health/live'], (req, res) => {
-  res.set('Cache-Control', 'no-store').json({ ok: true, service: 'TokoZyphra', status: 'live', timestamp: new Date().toISOString() });
+  res.set('Cache-Control', 'no-store').json({ ok: true, service: 'TokoRafael', status: 'live', timestamp: new Date().toISOString() });
 });
 
 app.use(async (req, res, next) => {
@@ -82,7 +82,7 @@ app.use(async (req, res, next) => {
 });
 
 app.get('/health/ready', (req, res) => {
-  res.set('Cache-Control', 'no-store').json({ ok: true, service: 'TokoZyphra', status: 'ready', timestamp: new Date().toISOString() });
+  res.set('Cache-Control', 'no-store').json({ ok: true, service: 'TokoRafael', status: 'ready', timestamp: new Date().toISOString() });
 });
 
 app.use('/webhooks', webhookRoutes);
@@ -164,7 +164,7 @@ app.use((error, req, res, next) => {
 
 if (require.main === module) {
   app.listen(config.port, () => {
-    console.log(`TokoZyphra berjalan di http://localhost:${config.port}`);
+    console.log(`TokoRafael berjalan di http://localhost:${config.port}`);
   });
   if (config.enableInternalJobs) startScheduler(config.internalJobIntervalMinutes);
 }

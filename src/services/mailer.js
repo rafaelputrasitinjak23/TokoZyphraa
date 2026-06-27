@@ -41,7 +41,7 @@ async function sendOtpEmail({ email, name, code, ttlMinutes, subject, heading, m
 
   const mailer = getTransporter();
   await mailer.sendMail({
-    from: process.env.MAIL_FROM || `TokoZyphra <${process.env.SMTP_USER}>`,
+    from: process.env.MAIL_FROM || `TokoRafael <${process.env.SMTP_USER}>`,
     to: email,
     subject,
     text: `Halo ${name}, kode OTP ${message.toLowerCase()} Anda adalah ${code}. Kode berlaku ${ttlMinutes} menit. Jangan berikan kode ini kepada siapa pun.`,
@@ -50,7 +50,7 @@ async function sendOtpEmail({ email, name, code, ttlMinutes, subject, heading, m
     html: `
       <div style="font-family:Arial,sans-serif;background:#0b1020;padding:32px;color:#e5e7eb">
         <div style="max-width:560px;margin:auto;background:#111827;border:1px solid #26324a;border-radius:20px;padding:28px">
-          <h1 style="margin:0 0 12px;color:#fff">Toko<span style="color:#7c3aed">Zyphra</span></h1>
+          <h1 style="margin:0 0 12px;color:#fff">Toko<span style="color:#7c3aed">Rafael</span></h1>
           <p>Halo <strong>${escapeHtml(name)}</strong>,</p>
           <p>${escapeHtml(heading)}</p>
           <div style="font-size:34px;font-weight:800;letter-spacing:10px;text-align:center;background:#0f172a;padding:18px;border-radius:14px;color:#a78bfa">${code}</div>
@@ -67,9 +67,9 @@ function sendRegistrationOtp({ email, name, code, ttlMinutes }) {
     name,
     code,
     ttlMinutes,
-    subject: 'Kode OTP Registrasi TokoZyphra',
+    subject: 'Kode OTP Registrasi TokoRafael',
     heading: 'Masukkan kode berikut untuk menyelesaikan registrasi:',
-    message: 'registrasi TokoZyphra'
+    message: 'registrasi TokoRafael'
   });
 }
 
@@ -79,9 +79,9 @@ function sendPasswordResetOtp({ email, name, code, ttlMinutes }) {
     name,
     code,
     ttlMinutes,
-    subject: 'Kode OTP Reset Kata Sandi TokoZyphra',
+    subject: 'Kode OTP Reset Kata Sandi TokoRafael',
     heading: 'Masukkan kode berikut untuk mengatur ulang kata sandi akun Anda:',
-    message: 'reset kata sandi TokoZyphra'
+    message: 'reset kata sandi TokoRafael'
   });
 }
 

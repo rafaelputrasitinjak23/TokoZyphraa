@@ -1,6 +1,6 @@
-# TokoZyphra
+# TokoRafael
 
-TokoZyphra adalah aplikasi e-commerce responsif berbasis Express.js, EJS, dan MongoDB yang berfokus pada penjualan produk digital. Proyek ini menyediakan registrasi OTP email, CAPTCHA, katalog dan keranjang, checkout, voucher, dompet pengguna, pengiriman URL file digital, serial key, ulasan terverifikasi, dukungan pelanggan, panel administrator, serta pembayaran Pakasir.
+TokoRafael adalah aplikasi e-commerce responsif berbasis Express.js, EJS, dan MongoDB yang berfokus pada penjualan produk digital. Proyek ini menyediakan registrasi OTP email, CAPTCHA, katalog dan keranjang, checkout, voucher, dompet pengguna, pengiriman URL file digital, serial key, ulasan terverifikasi, dukungan pelanggan, panel administrator, serta pembayaran Pakasir.
 
 ## Fitur Utama
 
@@ -89,7 +89,7 @@ rs.initiate()
 Gunakan URI seperti berikut:
 
 ```env
-MONGODB_URI=mongodb://127.0.0.1:27017/tokozyphra?replicaSet=rs0
+MONGODB_URI=mongodb://127.0.0.1:27017/tokorafael?replicaSet=rs0
 ```
 
 ## Seed Administrator

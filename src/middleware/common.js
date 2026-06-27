@@ -79,7 +79,7 @@ async function attachLocals(req, res, next) {
       ? await Notification.countDocuments({ user: req.session.user.id, isRead: false })
       : 0;
     res.locals.currentPath = req.path;
-    res.locals.appName = 'TokoZyphra';
+    res.locals.appName = 'TokoRafael';
     res.locals.enableClientProtection = process.env.ENABLE_CLIENT_PROTECTION !== 'false';
     res.locals.formatRupiah = (value) => new Intl.NumberFormat('id-ID', {
       style: 'currency', currency: 'IDR', maximumFractionDigits: 0
