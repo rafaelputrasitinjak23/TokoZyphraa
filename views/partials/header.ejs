@@ -11,28 +11,47 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="/js/intro-bootstrap.js?v=20260627-intro-1"></script>
-  <link rel="stylesheet" href="/css/style.css?v=20260627-intro-1">
-  <script src="/js/site-intro.js?v=20260627-intro-1" defer></script>
+  <script src="/js/intro-bootstrap.js?v=20260627-intro-2"></script>
+  <link rel="stylesheet" href="/css/style.css?v=20260627-intro-2">
+  <script src="/js/site-intro.js?v=20260627-intro-2" defer></script>
 </head>
 <body class="<%= isAdmin ? 'admin-shell' : 'market-shell' %><%= currentUser && !isAdmin ? ' has-mobile-market-nav' : '' %>">
   <div class="site-intro" data-site-intro aria-hidden="true" aria-label="Animasi pembuka TokoRafael">
-    <video
-      class="site-intro-video"
-      data-site-intro-video
-      autoplay
-      muted
-      playsinline
-      preload="auto"
-      poster="/images/tokorafael-intro-poster.jpg"
-    >
-      <source src="/media/tokorafael-intro.mp4" type="video/mp4">
-    </video>
-    <div class="site-intro-progress" aria-hidden="true"><span></span></div>
-    <button class="site-intro-skip" type="button" data-site-intro-skip>
-      Lewati
-      <span aria-hidden="true">→</span>
-    </button>
+    <div class="site-intro-backdrop" aria-hidden="true"></div>
+    <div class="site-intro-stage">
+      <img
+        class="site-intro-brand-logo"
+        src="https://athars.space/uploads/8ae360ca.png"
+        alt="TokoRafael"
+        width="320"
+        height="96"
+      >
+
+      <div class="site-intro-card">
+        <video
+          class="site-intro-video"
+          data-site-intro-video
+          autoplay
+          muted
+          playsinline
+          preload="auto"
+          poster="/images/tokorafael-intro-poster.jpg"
+        >
+          <source src="/media/tokorafael-intro.mp4" type="video/mp4">
+        </video>
+
+        <button class="site-intro-skip" type="button" data-site-intro-skip aria-label="Lewati animasi pembuka">
+          <span>Lewati</span>
+          <span aria-hidden="true">→</span>
+        </button>
+
+        <div class="site-intro-progress" aria-hidden="true">
+          <span data-site-intro-progress></span>
+        </div>
+      </div>
+
+      <p class="site-intro-caption">Belanja lebih praktis, aman, dan cepat.</p>
+    </div>
   </div>
 
   <%- include('icon-sprite') %>
